@@ -1,0 +1,71 @@
+---
+// Responsive, optimized photo from an editor photo slot. Outputs <picture> with AVIF and WebP
+// sources, a JPEG fallback, srcset/sizes, and lazy loading unless `priority` is set.
+import { Picture } from 'astro:assets';
+import { focusToObjectPosition, resolveImage } from '../lib/images';
+
+interface Props {
+    /** Path stored by Keystatic, e.g. "/src/assets/images/home/hero/image.jpg". */
+    src: string | null | undefined;
+    /** Required unless `decorative` is set. */
+    alt?: string;
+    decorative?: boolean;
+    focusVertical?: string | null;
+    focusHorizontal?: string | null;
+    /** Explicit CSS object-position; overrides the focus fields. */
+    objectPosition?: string;
+    /** Rendered widths to generate. Defaults suit a half-width section image. */
+    widths?: number[];
+    sizes: string;
+    /** Above-the-fold image: eager load and high fetch priority. */
+    priority?: boolean;
+    class?: string;
+    pictureClass?: string;
+}
+
+const {
+    src,
+    alt = '',
+    decorative = false,
+    focusVertical,
+    focusHorizontal,
+    objectPosition,
+    widths = [400, 800, 1200, 1600],
+    sizes,
+    priority = false,
+    class: className,
+    pictureClass,
+} = Astro.props;
+
+const image = resolveImage(src);
+if (!image) {
+    throw new Error(`Photo not found: "${src}". Check the path in src/content and that the file exists.`);
+}
+if (!decorative && !alt.trim()) {
+    throw new Error(`Photo "${src}" has no alt text. Add a photo description in the editor.`);
+}
+
+// Never upscale past the source file.
+const usableWidths = [...new Set(widths.map((width) => Math.min(width, image.width)))].sort((a, b) => a - b);
+const position = objectPosition ?? focusToObjectPosition(focusVertical, focusHorizontal);
+// The <img> fallback src uses the largest generated width instead of the full-size original.
+const fallbackWidth = usableWidths[usableWidths.length - 1];
+---
+
+<Picture
+    src={image}
+    alt={decorative ? '' : alt}
+    aria-hidden={decorative ? 'true' : undefined}
+    formats={['avif', 'webp']}
+    widths={usableWidths}
+    width={fallbackWidth}
+    height={Math.round((fallbackWidth * image.height) / image.width)}
+    sizes={sizes}
+    loading={priority ? 'eager' : 'lazy'}
+    decoding={priority ? 'sync' : 'async'}
+    fetchpriority={priority ? 'high' : undefined}
+    class={className}
+    pictureAttributes={{ class: pictureClass }}
+    style={`object-position: ${position}`}
+    quality={78}
+/>

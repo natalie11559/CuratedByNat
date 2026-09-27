@@ -1,0 +1,97 @@
+---
+import '../styles/global.css';
+import SiteFooter from '../components/SiteFooter.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import { site } from '../lib/content';
+import { SITE_NAME, absoluteUrl, localBusinessJsonLd } from '../lib/seo';
+
+interface Props {
+    title: string;
+    description: string;
+    /** Path used for the canonical URL, e.g. "/about". */
+    path: string;
+    current?: 'home' | 'about' | 'services' | 'inquire';
+    noindex?: boolean;
+}
+
+const { title, description, path, current, noindex = false } = Astro.props;
+const canonical = absoluteUrl(path);
+const ogImage = absoluteUrl('/og-image.jpg');
+const jsonLd = JSON.stringify(localBusinessJsonLd(site)).replace(/</g, '\\u003c');
+---
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{title}</title>
+        <meta name="description" content={description} />
+        {noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}
+        <meta name="theme-color" content="#F8F4EE" />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={SITE_NAME} />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:url" content={canonical} />
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="Curated by Nat" />
+        <meta property="og:locale" content="en_US" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={description} />
+        <meta name="twitter:image" content={ogImage} />
+
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/site.webmanifest" />
+
+        <link rel="preload" href="/fonts/libre-caslon-display-400.woff2" as="font" type="font/woff2" crossorigin />
+        <link rel="preload" href="/fonts/mulish-variable.woff2" as="font" type="font/woff2" crossorigin />
+        <link rel="sitemap" href="/sitemap-index.xml" />
+
+        <script is:inline>document.documentElement.classList.add('js');</script>
+        <script type="application/ld+json" set:html={jsonLd} />
+        <slot name="head" />
+    </head>
+    <body>
+        <a class="skip-link" href="#main">Skip to content</a>
+        <SiteHeader current={current} />
+        <main id="main" tabindex="-1">
+            <slot />
+        </main>
+        <SiteFooter />
+
+        <script>
+            // Fade sections in once as they scroll into view (design-spec section 7).
+            const revealTargets = document.querySelectorAll<HTMLElement>('.reveal');
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (reduceMotion || !('IntersectionObserver' in window)) {
+                revealTargets.forEach((element) => element.classList.add('is-visible'));
+            } else {
+                const observer = new IntersectionObserver(
+                    (entries) => {
+                        for (const entry of entries) {
+                            if (entry.isIntersecting) {
+                                entry.target.classList.add('is-visible');
+                                observer.unobserve(entry.target);
+                            }
+                        }
+                    },
+                    { threshold: 0.15 },
+                );
+                revealTargets.forEach((element) => observer.observe(element));
+            }
+        </script>
+    </body>
+</html>
+
+<style>
+    main:focus {
+        outline: none;
+    }
+</style>

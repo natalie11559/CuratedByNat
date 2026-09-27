@@ -1,0 +1,178 @@
+---
+// Design-spec 6.1. Renders a link when `href` is set, otherwise a <button>.
+interface Props {
+    label: string;
+    href?: string;
+    variant?: 'primary' | 'photo' | 'outline';
+    /** Full width at every size. Buttons are always full width below 768px unless `inlineOnMobile`. */
+    block?: boolean;
+    inlineOnMobile?: boolean;
+    type?: 'button' | 'submit';
+    disabled?: boolean;
+    /** Opens in a new tab and tells screen readers so. */
+    external?: boolean;
+    arrow?: boolean;
+    class?: string;
+    id?: string;
+    [key: `data-${string}`]: string | undefined;
+}
+
+const {
+    label,
+    href,
+    variant = 'primary',
+    block = false,
+    inlineOnMobile = false,
+    type = 'button',
+    disabled = false,
+    external = false,
+    arrow = true,
+    class: className,
+    id,
+    ...dataAttributes
+} = Astro.props;
+
+const classes = ['button', `button--${variant}`, block && 'button--block', !inlineOnMobile && 'button--block-mobile', className];
+---
+
+{
+    href ? (
+        <a
+            href={href}
+            class:list={classes}
+            id={id}
+            target={external ? '_blank' : undefined}
+            rel={external ? 'noopener' : undefined}
+            {...dataAttributes}
+        >
+            <span class="button__label">{label}</span>
+            {external && <span class="visually-hidden"> (opens in a new tab)</span>}
+            {arrow && (
+                <svg class="button__arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                </svg>
+            )}
+        </a>
+    ) : (
+        <button type={type} class:list={classes} id={id} disabled={disabled} {...dataAttributes}>
+            <span class="button__label">{label}</span>
+            {arrow && (
+                <svg class="button__arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                </svg>
+            )}
+        </button>
+    )
+}
+
+<style>
+    .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        min-height: 48px;
+        padding: 0 28px;
+        border-radius: var(--radius-xs);
+        border: 1px solid;
+        font-family: var(--font-body);
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        text-decoration: none;
+        white-space: nowrap;
+        text-align: center;
+        cursor: pointer;
+        transition:
+            background-color 200ms var(--ease-out),
+            border-color 200ms var(--ease-out),
+            color 200ms var(--ease-out),
+            gap 200ms var(--ease-out);
+    }
+
+    .button__arrow {
+        flex: 0 0 14px;
+    }
+
+    .button:focus-visible {
+        outline: 2px solid var(--color-accent-text);
+        outline-offset: 3px;
+    }
+
+    .button--primary {
+        background: var(--color-button);
+        border-color: var(--color-button);
+        color: var(--color-on-dark);
+    }
+
+    .button--photo {
+        background: var(--color-button);
+        border-color: rgba(248, 244, 238, 0.6);
+        color: var(--color-on-dark);
+    }
+
+    .button--outline {
+        background: transparent;
+        border-color: var(--color-button);
+        color: var(--color-button);
+    }
+
+    .button:not(:disabled):not([aria-disabled='true']):hover {
+        gap: 18px;
+    }
+
+    .button--primary:not(:disabled):hover,
+    .button--photo:not(:disabled):hover {
+        background: var(--color-button-hover);
+        border-color: var(--color-button-hover);
+        color: var(--color-on-dark);
+    }
+
+    .button--photo:not(:disabled):hover {
+        border-color: rgba(248, 244, 238, 0.6);
+    }
+
+    .button--outline:not(:disabled):hover {
+        background: var(--color-button);
+        color: var(--color-on-dark);
+    }
+
+    .button--primary:not(:disabled):active,
+    .button--photo:not(:disabled):active {
+        background: var(--color-button-pressed);
+        border-color: var(--color-button-pressed);
+    }
+
+    .button--outline:not(:disabled):active {
+        background: var(--color-button-hover);
+        color: var(--color-on-dark);
+    }
+
+    .button:disabled,
+    .button[aria-disabled='true'] {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    .button--block {
+        display: flex;
+        width: 100%;
+        padding: 14px 20px;
+        line-height: 1.4;
+        white-space: normal;
+    }
+
+    @media (max-width: 767px) {
+        .button--block-mobile {
+            display: flex;
+            width: 100%;
+            padding: 14px 20px;
+            line-height: 1.4;
+            white-space: normal;
+        }
+    }
+</style>

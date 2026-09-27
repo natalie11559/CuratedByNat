@@ -1,0 +1,29 @@
+{
+  "navigation": {
+    "home": "Home",
+    "about": "About",
+    "services": "Services",
+    "inquire": "Inquire",
+    "mobileButton": "Send an inquiry"
+  },
+  "social": {
+    "instagramUrl": "https://www.instagram.com/curated.bynat/",
+    "instagramHandle": "@curated.bynat",
+    "tiktokUrl": "https://www.tiktok.com/@curated.bynat",
+    "tiktokHandle": "@curated.bynat"
+  },
+  "footer": {
+    "tagline": "Weddings | Weekends | Celebrations",
+    "locationLine": "Wedding and event content, based in Georgia and available for destination celebrations.",
+    "buttonLabel": "Inquire now",
+    "legal": "© 2026 Curated by Nat"
+  },
+  "closingPhotos": [
+    { "image": "/src/assets/images/site/closing-nat-filming-sofa.jpg" },
+    { "image": "/src/assets/images/site/closing-couple-kiss.jpg" },
+    { "image": "/src/assets/images/site/closing-bride-laughing.jpg" },
+    { "image": "/src/assets/images/site/closing-bride-staircase.jpg" },
+    { "image": "/src/assets/images/site/closing-nat-filming-standing.jpg" },
+    { "image": "/src/assets/images/site/closing-porch-couple.jpg" }
+  ]
+}

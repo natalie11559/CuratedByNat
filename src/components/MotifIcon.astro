@@ -1,0 +1,42 @@
+---
+// The four brand motif icons from `Motif Strip.dc.html` (rose stroke, decorative).
+interface Props {
+    name: 'coupe' | 'bow' | 'heart' | 'heel';
+    size?: number;
+    strokeWidth?: number;
+    class?: string;
+}
+
+const { name, size = 20, strokeWidth = 1.4, class: className } = Astro.props;
+
+const paths: Record<Props['name'], string[]> = {
+    coupe: ['M4.5 5h15c0 4.2-3.4 6.5-7.5 6.5S4.5 9.2 4.5 5z', 'M12 11.5V19', 'M8 19.5h8'],
+    bow: [
+        'M12 10.5C10 7.5 5 5.5 3.5 7.5S4.5 14 8 13l4-2.5z',
+        'M12 10.5c2-3 7-5 8.5-3S19.5 14 16 13l-4-2.5z',
+        'M11 11.5l-2.5 7.5',
+        'M13 11.5l2.5 7.5',
+    ],
+    heart: ['M12 19.5s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 6.8a4.2 4.2 0 0 1 7.5 2.5c0 5.6-7.5 10.2-7.5 10.2z'],
+    heel: [
+        'M3 18.5h9.5l3.5-6c1-1.6 2.3-2.5 4-2.5V6.5h-2c-2.3 0-3.6 1.3-5 3.5l-2 3c-1 1.5-2.5 2.2-4.3 2.2C4.5 15.2 3 16.5 3 18.5z',
+        'M20 10v8.5',
+    ],
+};
+---
+
+<svg
+    class={className}
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width={strokeWidth}
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+    focusable="false"
+>
+    {paths[name].map((d) => <path d={d} />)}
+</svg>

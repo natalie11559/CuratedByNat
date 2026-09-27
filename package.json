@@ -1,0 +1,35 @@
+{
+  "name": "curatedbynat-site",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro build && wrangler dev",
+    "check": "astro check",
+    "deploy": "astro build && wrangler deploy",
+    "dev:cms": "PUBLIC_KEYSTATIC_STORAGE=local astro dev"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "14.3.3",
+    "@astrojs/react": "7.0.0",
+    "@astrojs/sitemap": "3.7.4",
+    "@keystatic/astro": "6.0.0",
+    "@keystatic/core": "0.6.9",
+    "astro": "7.3.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.10",
+    "@astrojs/node": "^11.1.6",
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "sharp": "0.35.4",
+    "typescript": "5.9.3",
+    "wrangler": "4.142.0"
+  }
+}

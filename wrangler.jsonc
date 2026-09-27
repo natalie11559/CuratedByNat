@@ -1,0 +1,13 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "curatedbynat",
+    "compatibility_date": "2026-09-20",
+    "compatibility_flags": ["nodejs_compat"],
+    "main": "@astrojs/cloudflare/entrypoints/server",
+    "assets": { "directory": "./dist", "binding": "ASSETS" },
+    "observability": { "enabled": true },
+    "d1_databases": [
+        { "binding": "DB", "database_name": "curatedbynat-inquiries", "migrations_dir": "migrations" }
+    ],
+    "vars": { "INQUIRY_TO": "hello@curatedbynat.com" }
+}

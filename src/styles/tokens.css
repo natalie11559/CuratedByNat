@@ -1,0 +1,93 @@
+/* Design tokens from inputs/design/design-spec.md (sections 1, 4, 5, 7). */
+:root {
+    /* Color */
+    --color-bg: #F8F4EE;
+    --color-bg-alt: #F9E8E4;
+    --color-surface: #FFFFFF;
+    --color-text: #2B2B2B;
+    --color-text-muted: #6B6260;
+    --color-button: #54573C;
+    --color-button-hover: #3F412D;
+    --color-button-pressed: #34362A;
+    --color-accent: #D48A95; /* decorative only, never text */
+    --color-accent-text: #9E4A5E;
+    --color-border: #E4D5D0;
+    --color-border-field: #8C817D;
+    --color-error: #A33A3F;
+    --color-error-tint: #FBEDEC;
+    --color-success: #4A6035;
+    --color-on-dark: #F8F4EE;
+    --color-on-photo: #FFFFFF;
+    --color-focus-halo: #F4D3D8;
+    --color-disabled-bg: #F1ECE6;
+    --color-disabled-border: #D9CFC9;
+    --color-disabled-text: #8C817D;
+    --color-hero-script: #FBE3E6;
+    --overlay-photo: rgba(43, 43, 43, 0.6);
+    --overlay-hero: radial-gradient(ellipse 70% 65% at 50% 50%, rgba(43, 43, 43, 0.62) 0%, rgba(43, 43, 43, 0.45) 55%, rgba(43, 43, 43, 0.32) 100%);
+
+    /* Fonts */
+    --font-heading: 'Libre Caslon Display', 'Times New Roman', serif;
+    --font-body: 'Mulish', 'Helvetica Neue', sans-serif;
+    --font-script: 'Mrs Saint Delafield', cursive;
+
+    /* Spacing scale (px values only from the spec) */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --space-9: 40px;
+    --space-10: 48px;
+    --space-11: 56px;
+    --space-12: 64px;
+    --space-13: 72px;
+    --space-14: 80px;
+    --space-15: 88px;
+    --space-16: 96px;
+    --space-17: 104px;
+
+    /* Layout */
+    --container-max: 1200px;
+    --gutter: 40px;
+    --section-pad-y: 104px;
+    --header-height: 88px;
+    --measure-beside-image: 520px;
+    --measure-text: 760px;
+
+    /* Radius */
+    --radius-none: 0;
+    --radius-xs: 2px;
+    --radius-sm: 4px;
+    --radius-lg: 12px;
+    --radius-full: 50%;
+
+    /* Borders and shadows */
+    --border-hairline: 1px solid var(--color-border);
+    --border-field: 1px solid var(--color-border-field);
+    --border-accent: 1px solid var(--color-accent);
+    --shadow-tile-hover: 0 12px 28px rgba(43, 43, 43, 0.14);
+    --shadow-focus-input: 0 0 0 1px var(--color-text), 0 0 0 4px var(--color-focus-halo);
+    --shadow-focus-input-error: 0 0 0 1px var(--color-error), 0 0 0 4px var(--color-focus-halo);
+
+    /* Motion */
+    --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (max-width: 1023px) {
+    :root {
+        --gutter: 32px;
+    }
+}
+
+@media (max-width: 767px) {
+    :root {
+        --gutter: 20px;
+        --section-pad-y: 64px;
+        --header-height: 64px;
+    }
+}
