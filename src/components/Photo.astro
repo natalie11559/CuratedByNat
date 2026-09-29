@@ -1,7 +1,8 @@
 ---
 // Responsive, optimized photo from an editor photo slot. Outputs <picture> with AVIF and WebP
 // sources, a JPEG fallback, srcset/sizes, and lazy loading unless `priority` is set.
-import { Picture } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import { getImage } from 'astro:assets';
 import { focusToObjectPosition, resolveImage } from '../lib/images';
 
 interface Props {
@@ -38,34 +39,64 @@ const {
 } = Astro.props;
 
 const image = resolveImage(src);
+const hasAlt = decorative || alt.trim() !== '';
+
+// In a production build a photo the site cannot use (for example a HEIC upload, or one with no
+// description) is left out with a warning in the build log, so it cannot block Nat's other edits
+// from going live. In development it fails loudly instead.
+let problem: string | null = null;
 if (!image) {
-    throw new Error(`Photo not found: "${src}". Check the path in src/content and that the file exists.`);
+    problem = `Photo "${src}" is missing or in a format the site cannot process (use JPG or PNG).`;
+} else if (!hasAlt) {
+    problem = `Photo "${src}" has no description (alt text).`;
 }
-if (!decorative && !alt.trim()) {
-    throw new Error(`Photo "${src}" has no alt text. Add a photo description in the editor.`);
+if (problem && !import.meta.env.PROD) {
+    throw new Error(`${problem} Fix it in the editor.`);
+}
+if (problem) {
+    console.warn(`[photo] Left out of the page: ${problem}`);
 }
 
-// Never upscale past the source file.
-const usableWidths = [...new Set(widths.map((width) => Math.min(width, image.width)))].sort((a, b) => a - b);
 const position = objectPosition ?? focusToObjectPosition(focusVertical, focusHorizontal);
-// The <img> fallback src uses the largest generated width instead of the full-size original.
-const fallbackWidth = usableWidths[usableWidths.length - 1];
+
+async function buildSources(source: ImageMetadata) {
+    // Never upscale past the source file.
+    const usableWidths = [...new Set(widths.map((width) => Math.min(width, source.width)))].sort((a, b) => a - b);
+    // The <img> fallback src uses the largest generated width instead of the full-size original.
+    const fallbackWidth = usableWidths[usableWidths.length - 1];
+    const fallbackHeight = Math.round((fallbackWidth * source.height) / source.width);
+    // Each format gets its own quality: AVIF looks as good as WebP and JPEG at a much lower setting,
+    // and a single shared quality made AVIF files larger than WebP.
+    const [avif, webp, jpeg] = await Promise.all([
+        getImage({ src: source, format: 'avif', widths: usableWidths, quality: 55 }),
+        getImage({ src: source, format: 'webp', widths: usableWidths, quality: 74 }),
+        getImage({ src: source, format: 'jpg', widths: usableWidths, width: fallbackWidth, quality: 78 }),
+    ]);
+    return { avif, webp, jpeg, fallbackWidth, fallbackHeight };
+}
+
+const sources = image && !problem ? await buildSources(image) : null;
 ---
 
-<Picture
-    src={image}
-    alt={decorative ? '' : alt}
-    aria-hidden={decorative ? 'true' : undefined}
-    formats={['avif', 'webp']}
-    widths={usableWidths}
-    width={fallbackWidth}
-    height={Math.round((fallbackWidth * image.height) / image.width)}
-    sizes={sizes}
-    loading={priority ? 'eager' : 'lazy'}
-    decoding={priority ? 'sync' : 'async'}
-    fetchpriority={priority ? 'high' : undefined}
-    class={className}
-    pictureAttributes={{ class: pictureClass }}
-    style={`object-position: ${position}`}
-    quality={78}
-/>
+{
+    sources && (
+        <picture class={pictureClass}>
+            <source type="image/avif" srcset={sources.avif.srcSet.attribute} sizes={sizes} />
+            <source type="image/webp" srcset={sources.webp.srcSet.attribute} sizes={sizes} />
+            <img
+                src={sources.jpeg.src}
+                srcset={sources.jpeg.srcSet.attribute}
+                sizes={sizes}
+                width={sources.fallbackWidth}
+                height={sources.fallbackHeight}
+                alt={decorative ? '' : alt}
+                aria-hidden={decorative ? 'true' : undefined}
+                loading={priority ? 'eager' : 'lazy'}
+                decoding={priority ? 'sync' : 'async'}
+                fetchpriority={priority ? 'high' : undefined}
+                class={className}
+                style={`object-position: ${position}`}
+            />
+        </picture>
+    )
+}

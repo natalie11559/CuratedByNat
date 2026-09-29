@@ -1,0 +1,218 @@
+---
+// Design-spec 6.6 (Photo Grid) and the Home Instagram section in `Home.dc.html`: text column,
+// then four photo tiles that each open Instagram in a new tab.
+import Button from './Button.astro';
+import Photo from './Photo.astro';
+
+interface Tile {
+    image: string | null | undefined;
+    alt: string;
+    focusVertical?: string | null;
+    focusHorizontal?: string | null;
+}
+
+interface Props {
+    eyebrow?: string;
+    title: string;
+    body?: string;
+    buttonLabel: string;
+    /** External link (Instagram profile); opens in a new tab. */
+    buttonHref: string;
+    /** Shown under the button, uppercased with CSS. */
+    handle?: string;
+    tiles: readonly Tile[];
+    /** Where every tile links (the Instagram profile). */
+    tileHref: string;
+    class?: string;
+    [attribute: `data-${string}`]: unknown;
+}
+
+const { eyebrow, title, body, buttonLabel, buttonHref, handle, tiles, tileHref, class: className, ...attributes } = Astro.props;
+
+// Tile widths: the tile column is the container less the 360px text column and 64px gap,
+// split into 4 (2 on tablets and phones) with 8px gaps. Tiles are 2:3 and the photos 3:4,
+// so the photo is drawn about 1.125x the tile width.
+const tileSizes =
+    '(min-width: 1280px) 212px, (min-width: 1024px) calc((100vw - 528px) * 0.28), (min-width: 768px) calc((100vw - 496px) * 0.56), calc((100vw - 48px) * 0.56)';
+---
+
+<section class:list={['photo-grid', 'bg-base', className]} {...attributes}>
+    <div class="photo-grid__inner">
+        <div class="photo-grid__text">
+            {eyebrow && <p class="t-eyebrow">{eyebrow}</p>}
+            <h2 class="t-h2">{title}</h2>
+            {body && <p class="photo-grid__body t-body">{body}</p>}
+            <div class="photo-grid__actions">
+                <div class="photo-grid__button">
+                    <Button label={buttonLabel} href={buttonHref} external block />
+                </div>
+                {
+                    handle && (
+                        <a class="photo-grid__handle" href={buttonHref} target="_blank" rel="noopener">
+                            {handle}
+                            <span class="visually-hidden"> on Instagram (opens in a new tab)</span>
+                        </a>
+                    )
+                }
+            </div>
+        </div>
+
+        <ul class="photo-grid__tiles" role="list">
+            {
+                tiles.map((tile) => (
+                    <li class="photo-grid__tile-item">
+                        <a class="photo-grid__tile" href={tileHref} target="_blank" rel="noopener">
+                            <Photo
+                                src={tile.image}
+                                alt={tile.alt}
+                                focusVertical={tile.focusVertical}
+                                focusHorizontal={tile.focusHorizontal}
+                                widths={[240, 360, 480, 720]}
+                                sizes={tileSizes}
+                            />
+                            <span class="visually-hidden"> on Instagram (opens in a new tab)</span>
+                        </a>
+                    </li>
+                ))
+            }
+        </ul>
+    </div>
+</section>
+
+<style>
+    .photo-grid {
+        padding: 40px var(--gutter) 104px;
+    }
+
+    .photo-grid__inner {
+        max-width: var(--container-max);
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 360px minmax(0, 1fr);
+        gap: 64px;
+        align-items: center;
+    }
+
+    .photo-grid__text {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .photo-grid__body {
+        max-width: 360px;
+    }
+
+    .photo-grid__actions {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+        margin-top: 8px;
+    }
+
+    .photo-grid__button {
+        width: fit-content;
+        max-width: 100%;
+    }
+
+    /* Padding gives the 17px-tall handle a 44px tap area without moving it. */
+    .photo-grid__handle {
+        margin: -14px 0;
+        padding: 14px 0;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.4;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: var(--color-text);
+        transition: color 200ms var(--ease-out);
+    }
+
+    .photo-grid__handle:hover {
+        color: var(--color-accent-text);
+    }
+
+    .photo-grid__handle:focus-visible {
+        outline-offset: -4px;
+    }
+
+    .photo-grid__tiles {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .photo-grid__tile {
+        display: block;
+        aspect-ratio: 2 / 3;
+        overflow: hidden;
+        border-radius: var(--radius-sm);
+        transition:
+            transform 300ms var(--ease-spring),
+            box-shadow 300ms var(--ease-spring);
+    }
+
+    .photo-grid__tile:hover {
+        box-shadow: var(--shadow-tile-hover);
+    }
+
+    .photo-grid__tile:focus-visible {
+        outline-offset: 3px;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .photo-grid__tile-item:nth-child(odd) .photo-grid__tile:hover {
+            transform: translateY(-4px) rotate(-1.2deg);
+        }
+
+        .photo-grid__tile-item:nth-child(even) .photo-grid__tile:hover {
+            transform: translateY(-4px) rotate(1.2deg);
+        }
+    }
+
+    .photo-grid__tile :global(picture) {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    .photo-grid__tile :global(img) {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    @media (max-width: 1023px) {
+        .photo-grid__tiles {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 767px) {
+        .photo-grid {
+            padding: 16px 20px 64px;
+        }
+
+        .photo-grid__inner {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 36px;
+        }
+
+        .photo-grid__actions {
+            align-items: stretch;
+        }
+
+        .photo-grid__button {
+            width: 100%;
+        }
+
+        .photo-grid__handle {
+            text-align: center;
+        }
+    }
+</style>

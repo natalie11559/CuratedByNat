@@ -103,6 +103,11 @@ const classes = ['button', `button--${variant}`, block && 'button--block', !inli
         outline-offset: 3px;
     }
 
+    /* On photos the rose ring all but disappears, so photo buttons use a light ring. */
+    .button--photo:focus-visible {
+        outline-color: var(--color-on-dark);
+    }
+
     .button--primary {
         background: var(--color-button);
         border-color: var(--color-button);
@@ -125,29 +130,29 @@ const classes = ['button', `button--${variant}`, block && 'button--block', !inli
         gap: 18px;
     }
 
-    .button--primary:not(:disabled):hover,
-    .button--photo:not(:disabled):hover {
+    .button--primary:not(:disabled):not([aria-disabled='true']):hover,
+    .button--photo:not(:disabled):not([aria-disabled='true']):hover {
         background: var(--color-button-hover);
         border-color: var(--color-button-hover);
         color: var(--color-on-dark);
     }
 
-    .button--photo:not(:disabled):hover {
+    .button--photo:not(:disabled):not([aria-disabled='true']):hover {
         border-color: rgba(248, 244, 238, 0.6);
     }
 
-    .button--outline:not(:disabled):hover {
+    .button--outline:not(:disabled):not([aria-disabled='true']):hover {
         background: var(--color-button);
         color: var(--color-on-dark);
     }
 
-    .button--primary:not(:disabled):active,
-    .button--photo:not(:disabled):active {
+    .button--primary:not(:disabled):not([aria-disabled='true']):active,
+    .button--photo:not(:disabled):not([aria-disabled='true']):active {
         background: var(--color-button-pressed);
         border-color: var(--color-button-pressed);
     }
 
-    .button--outline:not(:disabled):active {
+    .button--outline:not(:disabled):not([aria-disabled='true']):active {
         background: var(--color-button-hover);
         color: var(--color-on-dark);
     }

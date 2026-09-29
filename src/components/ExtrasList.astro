@@ -1,0 +1,44 @@
+---
+// Design-spec 6.11: the Services "Extras" add-ons, shown as bordered labels. Not interactive.
+interface Props {
+    items: readonly string[];
+    class?: string;
+}
+
+const { items, class: className } = Astro.props;
+---
+
+<ul class:list={['extras', className]} role="list">
+    {items.map((item) => <li class="extras__item">{item}</li>)}
+</ul>
+
+<style>
+    .extras {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--space-3);
+    }
+
+    .extras__item {
+        padding: 14px 22px;
+        border: var(--border-hairline);
+        border-radius: var(--radius-xs);
+        background: var(--color-bg);
+        font-family: var(--font-heading);
+        font-size: 20px;
+        line-height: 1.2;
+        color: var(--color-text);
+        text-align: center;
+    }
+
+    @media (max-width: 767px) {
+        .extras {
+            flex-direction: column;
+            width: 100%;
+        }
+    }
+</style>

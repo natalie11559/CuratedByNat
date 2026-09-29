@@ -1,0 +1,138 @@
+---
+// Three short text columns with hairline dividers.
+// 'expect': About "What you can expect" (rose ring and serif title above each column).
+// 'plain': Services "Good to know" (text only).
+// Renders only the list; the page renders the section and its heading around it.
+interface Props {
+    items: readonly { title?: string; body: string }[];
+    variant: 'expect' | 'plain';
+    headingLevel?: 2 | 3 | 4;
+    class?: string;
+}
+
+const { items, variant, headingLevel = 3, class: className } = Astro.props;
+const TitleTag = `h${headingLevel}` as 'h2' | 'h3' | 'h4';
+---
+
+<ul class:list={['features', `features--${variant}`, className]} role="list">
+    {
+        items.map((item) => (
+            <li class="features__item">
+                {variant === 'expect' && <span class="features__ring" aria-hidden="true" />}
+                {item.title && <TitleTag class="features__title">{item.title}</TitleTag>}
+                <p class="features__body">{item.body}</p>
+            </li>
+        ))
+    }
+</ul>
+
+<style>
+    .features {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .features__item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .features__item + .features__item {
+        border-left: var(--border-hairline);
+    }
+
+    .features__title {
+        margin: 0;
+        font-family: var(--font-heading);
+        font-weight: 400;
+        font-size: 26px;
+        line-height: 1.2;
+        color: var(--color-text);
+    }
+
+    .features__body {
+        font-size: 16px;
+        line-height: 1.7;
+    }
+
+    /* About: What you can expect */
+    .features--expect {
+        row-gap: var(--space-8);
+    }
+
+    .features--expect .features__item {
+        gap: var(--space-3);
+        padding: 0 var(--space-8);
+    }
+
+    .features__ring {
+        width: 10px;
+        height: 10px;
+        border: 1.25px solid var(--color-accent);
+        border-radius: var(--radius-full);
+    }
+
+    .features--expect .features__body {
+        max-width: 280px;
+        color: var(--color-text-muted);
+    }
+
+    /* Services: Good to know */
+    .features--plain {
+        row-gap: var(--space-6);
+    }
+
+    .features--plain .features__item {
+        gap: var(--space-2);
+        padding: 0 var(--space-9);
+    }
+
+    .features--plain .features__title {
+        font-size: 24px;
+    }
+
+    .features--plain .features__body {
+        color: var(--color-text);
+    }
+
+    @media (min-width: 768px) and (max-width: 1023px) {
+        /* Narrower inner padding keeps three readable columns inside the tablet container. */
+        .features--expect .features__item,
+        .features--plain .features__item {
+            padding: 0 var(--space-6);
+        }
+    }
+
+    @media (max-width: 767px) {
+        .features {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .features__item + .features__item {
+            border-left: 0;
+        }
+
+        .features--expect .features__item {
+            padding: 0;
+        }
+
+        .features--expect .features__item + .features__item {
+            padding-top: var(--space-8);
+            border-top: var(--border-hairline);
+        }
+
+        .features--expect .features__title {
+            font-size: 24px;
+        }
+
+        .features--plain .features__item {
+            padding: 0;
+        }
+    }
+</style>

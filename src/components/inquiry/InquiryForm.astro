@@ -1,0 +1,1030 @@
+---
+// The inquiry form (content doc section 4, design spec 6.12, 6.13 and 9.4). It is a normal HTML form
+// posting to /api/inquiry; the script below enhances it with inline validation, conditional
+// questions, Cloudflare Turnstile and the in-place success panel.
+import Button from '../Button.astro';
+import MotifIcon from '../MotifIcon.astro';
+import SuccessPanel from './SuccessPanel.astro';
+import { inquiryForm as copy } from '../../lib/content';
+import {
+    CELEBRATIONS,
+    FIELDS,
+    GEORGIA_ANSWERS,
+    HONEYPOT_FIELD,
+    STARTED_AT_FIELD,
+    SUBMITTED_AT_FIELD,
+    errorId,
+    fieldId,
+    type FieldName,
+} from '../../lib/inquiry/fields';
+import { rulesFromContent } from '../../lib/inquiry/validate';
+
+interface Props {
+    /** id of the page heading that names the form. */
+    labelledBy?: string;
+}
+
+const { labelledBy } = Astro.props;
+
+// Cloudflare's published test site key: always passes without showing a challenge. Development only.
+const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA';
+const configuredSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY as string | undefined;
+if (!configuredSiteKey && import.meta.env.PROD) {
+    throw new Error(
+        'PUBLIC_TURNSTILE_SITE_KEY is not set, so the inquiry form would have no working spam check. ' +
+            'Add the Turnstile site key as a build variable (Cloudflare dashboard > Turnstile > the widget for curatedbynat.com). ' +
+            `For a local test build only, use Cloudflare's test key: PUBLIC_TURNSTILE_SITE_KEY=${TURNSTILE_TEST_SITE_KEY} npm run build`,
+    );
+}
+const turnstileSiteKey = configuredSiteKey || TURNSTILE_TEST_SITE_KEY;
+
+type QuestionCopy = { label: string; placeholder?: string };
+const questions = copy.fields as unknown as Record<FieldName, QuestionCopy>;
+
+const selectOptions: Partial<Record<FieldName, { value: string; label: string }[]>> = {
+    inquirer: copy.fields.inquirer.options.map((label) => ({ value: label, label })),
+    inGeorgia: GEORGIA_ANSWERS.map((answer) => ({ value: answer.value, label: copy.fields.inGeorgia.options[answer.copyKey] })),
+    photoVideo: copy.fields.photoVideo.options.map((label) => ({ value: label, label })),
+    foundVia: copy.fields.foundVia.options.map((label) => ({ value: label, label })),
+};
+
+const celebrationChoices = CELEBRATIONS.map((celebration) => ({
+    value: celebration.value,
+    ...copy.fields.celebrating.options[celebration.copyKey],
+}));
+
+const clientConfig = {
+    rules: rulesFromContent(copy),
+    turnstileSiteKey,
+    submitLabel: copy.submit.label,
+    loadingLabel: copy.submit.loadingLabel,
+    errorSummary: copy.messages.errorSummary,
+    sendFailure: copy.messages.sendFailure,
+};
+
+const destinationNoteId = 'inquiry-inGeorgia-note';
+---
+
+<section class="inquiry-section" data-inquiry data-config={JSON.stringify(clientConfig)}>
+    <form class="inquiry-form" method="post" action="/api/inquiry" aria-labelledby={labelledBy} data-inquiry-form>
+        <div class="error-summary" role="alert" tabindex="-1" hidden data-error-summary>
+            <svg class="error-summary__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <p data-error-summary-text>{copy.messages.errorSummary}</p>
+        </div>
+
+        <p class="form-intro">{copy.intro}</p>
+        <noscript><p class="form-noscript">{copy.messages.noJavaScript}</p></noscript>
+
+        <div class="form-grid">
+            {
+                FIELDS.map((field) => {
+                    const question = questions[field.name];
+                    const id = fieldId(field.name);
+                    const layoutClass = `field--${field.layout}`;
+                    const optionalMarker = !field.required && field.kind !== 'checkbox' && (
+                        <span class="field__optional">{` ${copy.optionalMarker}`}</span>
+                    );
+                    const error = (
+                        <p class="field__error" id={errorId(field.name)} hidden>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            <span data-error-text></span>
+                        </p>
+                    );
+
+                    if (field.kind === 'checkboxes') {
+                        return (
+                            <fieldset class:list={['field', 'field--group', layoutClass]} data-field={field.name} data-group>
+                                <legend class="field__label">{question.label}</legend>
+                                <div class="choice-grid">
+                                    {celebrationChoices.map((choice) => (
+                                        <label class="choice">
+                                            <input class="choice__input" type="checkbox" name={field.name} value={choice.value} />
+                                            <span class="choice__box" aria-hidden="true">
+                                                <svg class="choice__check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                                                    <path d="M20 6 9 17l-5-5" />
+                                                </svg>
+                                            </span>
+                                            <span class="choice__text">
+                                                <span>{choice.label}</span>{' '}
+                                                {choice.detail && (
+                                                    <span class="choice__detail">
+                                                        <span class="visually-hidden">(</span>
+                                                        {choice.detail}
+                                                        <span class="visually-hidden">)</span>
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </label>
+                                    ))}
+                                </div>
+                                {error}
+                            </fieldset>
+                        );
+                    }
+
+                    if (field.kind === 'checkbox') {
+                        return (
+                            <div class:list={['field', layoutClass, 'field--single']} data-field={field.name}>
+                                <label class="single-check">
+                                    <input class="choice__input" type="checkbox" id={id} name={field.name} value="yes" />
+                                    <span class="choice__box" aria-hidden="true">
+                                        <svg class="choice__check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                                            <path d="M20 6 9 17l-5-5" />
+                                        </svg>
+                                    </span>
+                                    <span>{question.label}</span>
+                                </label>
+                            </div>
+                        );
+                    }
+
+                    const isEndDate = field.name === 'endDate';
+                    return (
+                        <div class:list={['field', layoutClass]} data-field={field.name} hidden={isEndDate}>
+                            <label class="field__label" for={id}>
+                                {question.label}
+                                {optionalMarker}
+                            </label>
+                            <div class="field__body">
+                                {field.kind === 'select' ? (
+                                    <select class="field__control field__select" id={id} name={field.name} required={field.required}>
+                                        <option value="">{copy.selectPlaceholder}</option>
+                                        {(selectOptions[field.name] ?? []).map((option) => (
+                                            <option value={option.value}>{option.label}</option>
+                                        ))}
+                                    </select>
+                                ) : field.kind === 'textarea' ? (
+                                    <textarea class="field__control field__textarea" id={id} name={field.name} rows="4" maxlength={field.maxLength} />
+                                ) : (
+                                    <input
+                                        class="field__control"
+                                        id={id}
+                                        name={field.name}
+                                        type={field.kind}
+                                        autocomplete={field.autocomplete}
+                                        maxlength={field.maxLength}
+                                        placeholder={question.placeholder || undefined}
+                                        required={field.required}
+                                        disabled={isEndDate}
+                                        spellcheck={field.kind === 'email' || field.name === 'instagram' ? 'false' : undefined}
+                                        autocapitalize={field.kind === 'email' || field.name === 'instagram' ? 'none' : undefined}
+                                    />
+                                )}
+                                {error}
+                                {field.name === 'inGeorgia' && (
+                                    <div aria-live="polite">
+                                        <p class="field__note" id={destinationNoteId} hidden data-destination-note>
+                                            <MotifIcon name="heart" size={16} strokeWidth={1.6} />
+                                            <span>{copy.fields.inGeorgia.destinationNote}</span>
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })
+            }
+        </div>
+
+        <!-- Spam traps: a field only bots fill in, and the time the form was opened and sent. -->
+        <div class="inquiry-trap" aria-hidden="true">
+            <label for="inquiry-website">Website</label>
+            <input id="inquiry-website" type="text" name={HONEYPOT_FIELD} tabindex="-1" autocomplete="off" />
+        </div>
+        <input type="hidden" name={STARTED_AT_FIELD} value="" data-started-at />
+        <input type="hidden" name={SUBMITTED_AT_FIELD} value="" data-submitted-at />
+
+        <div class="form-actions">
+            <div class="turnstile" data-turnstile></div>
+            <Button type="submit" label={copy.submit.label} data-submit-button="" />
+            <p class="visually-hidden" role="status" data-sending-status></p>
+        </div>
+    </form>
+
+    <SuccessPanel hidden id="inquiry-success" />
+</section>
+
+<script>
+    import {
+        DESTINATION_ANSWER,
+        HONEYPOT_FIELD,
+        STARTED_AT_FIELD,
+        SUBMITTED_AT_FIELD,
+        TURNSTILE_FIELD,
+        errorId,
+        fieldId,
+        type FieldName,
+    } from '../../lib/inquiry/fields';
+    import {
+        allowsEndDate,
+        inquiryInputFromForm,
+        validateInquiry,
+        type FieldErrors,
+        type ValidationRules,
+    } from '../../lib/inquiry/validate';
+
+    interface InquiryConfig {
+        rules: ValidationRules;
+        turnstileSiteKey: string;
+        submitLabel: string;
+        loadingLabel: string;
+        errorSummary: string;
+        sendFailure: string;
+    }
+
+    interface TurnstileApi {
+        render(container: HTMLElement, options: Record<string, unknown>): string | undefined;
+        reset(widgetId?: string): void;
+    }
+
+    const TURNSTILE_SCRIPT = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    const TOKEN_WAIT_MS = 60_000;
+    const REQUEST_TIMEOUT_MS = 20_000;
+    const SUMMARY_GAP_BELOW_HEADER = 24;
+
+    const wait = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+    /**
+     * Loads Turnstile only on this page and renders it invisibly ("interaction-only"): most visitors
+     * never see it, and the few who need a check see it above the Send button.
+     */
+    function createTurnstile(container: HTMLElement, siteKey: string) {
+        let widgetId: string | undefined;
+        let token = '';
+        let unavailable = false;
+        let waiting: Array<{ resolve: (token: string) => void; reject: (error: Error) => void }> = [];
+
+        const settle = (result: string | Error) => {
+            const pending = waiting;
+            waiting = [];
+            for (const waiter of pending) {
+                if (typeof result === 'string') waiter.resolve(result);
+                else waiter.reject(result);
+            }
+        };
+
+        const api = () => (window as unknown as { turnstile?: TurnstileApi }).turnstile;
+
+        const render = () => {
+            const turnstile = api();
+            if (!turnstile) {
+                unavailable = true;
+                settle(new Error('Turnstile did not load.'));
+                return;
+            }
+            widgetId = turnstile.render(container, {
+                sitekey: siteKey,
+                action: 'inquiry',
+                appearance: 'interaction-only',
+                callback: (value: string) => {
+                    token = value;
+                    settle(value);
+                },
+                'expired-callback': () => {
+                    token = '';
+                },
+                'error-callback': () => {
+                    token = '';
+                    // Handled: Turnstile retries on its own, and a stuck check times out below.
+                    return true;
+                },
+                'before-interactive-callback': () => container.classList.add('is-interactive'),
+                'after-interactive-callback': () => container.classList.remove('is-interactive'),
+            });
+        };
+
+        const script = document.createElement('script');
+        script.src = TURNSTILE_SCRIPT;
+        script.async = true;
+        script.addEventListener('load', render);
+        script.addEventListener('error', () => {
+            unavailable = true;
+            settle(new Error('Turnstile did not load.'));
+        });
+        document.head.append(script);
+
+        return {
+            /** Resolves with a fresh token. Each token is used once. */
+            getToken(): Promise<string> {
+                if (unavailable) return Promise.reject(new Error('Turnstile is unavailable.'));
+                if (token) {
+                    const current = token;
+                    token = '';
+                    return Promise.resolve(current);
+                }
+                return new Promise((resolve, reject) => {
+                    const timer = setTimeout(() => reject(new Error('Turnstile timed out.')), TOKEN_WAIT_MS);
+                    waiting.push({
+                        resolve: (value) => {
+                            clearTimeout(timer);
+                            token = '';
+                            resolve(value);
+                        },
+                        reject: (error) => {
+                            clearTimeout(timer);
+                            reject(error);
+                        },
+                    });
+                });
+            },
+            /** Asks for a new token after one was spent on a request that failed. */
+            reset() {
+                token = '';
+                const turnstile = api();
+                if (turnstile && widgetId !== undefined) turnstile.reset(widgetId);
+            },
+        };
+    }
+
+    function addToken(element: Element, attribute: string, value: string) {
+        const tokens = new Set((element.getAttribute(attribute) ?? '').split(/\s+/).filter(Boolean));
+        tokens.add(value);
+        element.setAttribute(attribute, [...tokens].join(' '));
+    }
+
+    function removeToken(element: Element, attribute: string, value: string) {
+        const tokens = (element.getAttribute(attribute) ?? '').split(/\s+/).filter((token) => token && token !== value);
+        if (tokens.length > 0) element.setAttribute(attribute, tokens.join(' '));
+        else element.removeAttribute(attribute);
+    }
+
+    function initInquiryForm(root: HTMLElement) {
+        const form = root.querySelector<HTMLFormElement>('[data-inquiry-form]');
+        const summary = root.querySelector<HTMLElement>('[data-error-summary]');
+        const summaryText = root.querySelector<HTMLElement>('[data-error-summary-text]');
+        const submitButton = root.querySelector<HTMLButtonElement>('[data-submit-button]');
+        const submitLabel = submitButton?.querySelector<HTMLElement>('.button__label');
+        const sendingStatus = root.querySelector<HTMLElement>('[data-sending-status]');
+        const turnstileContainer = root.querySelector<HTMLElement>('[data-turnstile]');
+        const startedAt = root.querySelector<HTMLInputElement>('[data-started-at]');
+        const submittedAt = root.querySelector<HTMLInputElement>('[data-submitted-at]');
+        const successPanel = root.querySelector<HTMLElement>('[data-success-panel]');
+        const successHeading = root.querySelector<HTMLElement>('[data-success-heading]');
+        const endDateField = root.querySelector<HTMLElement>('[data-field="endDate"]');
+        const endDateInput = document.getElementById(fieldId('endDate')) as HTMLInputElement | null;
+        const eventDateInput = document.getElementById(fieldId('eventDate')) as HTMLInputElement | null;
+        const eventDateField = root.querySelector<HTMLElement>('[data-field="eventDate"]');
+        const dateNotSetInput = document.getElementById(fieldId('dateNotSet')) as HTMLInputElement | null;
+        const georgiaSelect = document.getElementById(fieldId('inGeorgia')) as HTMLSelectElement | null;
+        const destinationNote = root.querySelector<HTMLElement>('[data-destination-note]');
+        const celebrationGroup = root.querySelector<HTMLFieldSetElement>('[data-field="celebrating"]');
+
+        if (
+            !form ||
+            !summary ||
+            !summaryText ||
+            !submitButton ||
+            !submitLabel ||
+            !turnstileContainer ||
+            !startedAt ||
+            !submittedAt ||
+            !successPanel ||
+            !successHeading ||
+            !endDateField ||
+            !endDateInput ||
+            !eventDateInput ||
+            !eventDateField ||
+            !dateNotSetInput ||
+            !georgiaSelect ||
+            !destinationNote ||
+            !celebrationGroup
+        ) {
+            return;
+        }
+
+        const config = JSON.parse(root.dataset.config ?? '{}') as InquiryConfig;
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const turnstile = createTurnstile(turnstileContainer, config.turnstileSiteKey);
+        const celebrationInputs = [...celebrationGroup.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')];
+
+        /** Fields that have shown an error since the last submit; they re-check as the visitor types. */
+        const flagged = new Set<FieldName>();
+        let summaryShows: 'errors' | 'failure' | null = null;
+        let sending = false;
+
+        form.noValidate = true;
+        startedAt.value = String(Date.now());
+
+        const currentErrors = (): FieldErrors => {
+            const result = validateInquiry(inquiryInputFromForm(new FormData(form)), config.rules);
+            return result.ok ? {} : result.errors;
+        };
+
+        const showFieldError = (name: FieldName, message: string | undefined) => {
+            const errorElement = document.getElementById(errorId(name));
+            const errorText = errorElement?.querySelector<HTMLElement>('[data-error-text]');
+            if (!errorElement || !errorText) return;
+
+            const describedElement = name === 'celebrating' ? celebrationGroup : document.getElementById(fieldId(name));
+            const invalidElements = name === 'celebrating' ? celebrationInputs : [describedElement];
+
+            errorText.textContent = message ?? '';
+            errorElement.hidden = !message;
+            if (describedElement) {
+                if (message) addToken(describedElement, 'aria-describedby', errorId(name));
+                else removeToken(describedElement, 'aria-describedby', errorId(name));
+            }
+            for (const element of invalidElements) {
+                if (!element) continue;
+                if (message) element.setAttribute('aria-invalid', 'true');
+                else element.removeAttribute('aria-invalid');
+            }
+        };
+
+        const scrollBelowHeader = (element: HTMLElement) => {
+            const headerHeight =
+                parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--header-height')) || 0;
+            const top = element.getBoundingClientRect().top + window.scrollY - headerHeight - SUMMARY_GAP_BELOW_HEADER;
+            window.scrollTo({ top: Math.max(0, top), behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+        };
+
+        const showSummary = (message: string, kind: 'errors' | 'failure') => {
+            summaryText.textContent = message;
+            summary.hidden = false;
+            summaryShows = kind;
+            summary.focus({ preventScroll: true });
+            scrollBelowHeader(summary);
+        };
+
+        const hideSummary = () => {
+            summary.hidden = true;
+            summaryShows = null;
+        };
+
+        const showErrors = (errors: FieldErrors) => {
+            for (const name of Object.keys(errors) as FieldName[]) flagged.add(name);
+            for (const name of flagged) showFieldError(name, errors[name]);
+        };
+
+        const recheckFlagged = () => {
+            if (flagged.size === 0) return;
+            const errors = currentErrors();
+            for (const name of flagged) showFieldError(name, errors[name]);
+            if (summaryShows === 'errors' && ![...flagged].some((name) => errors[name])) hideSummary();
+        };
+
+        /** The End date, date-not-set and destination-note rules (content doc section 4). */
+        const syncConditionalQuestions = () => {
+            const celebrating = celebrationInputs.filter((input) => input.checked).map((input) => input.value);
+            const showEndDate = allowsEndDate(celebrating);
+            endDateField.hidden = !showEndDate;
+            endDateInput.disabled = !showEndDate;
+            if (!showEndDate) {
+                flagged.delete('endDate');
+                showFieldError('endDate', undefined);
+            }
+
+            const dateNotSet = dateNotSetInput.checked;
+            eventDateInput.disabled = dateNotSet;
+            eventDateInput.required = !dateNotSet;
+            eventDateField.classList.toggle('is-disabled', dateNotSet);
+
+            const isDestination = georgiaSelect.value === DESTINATION_ANSWER;
+            destinationNote.hidden = !isDestination;
+            if (isDestination) addToken(georgiaSelect, 'aria-describedby', destinationNote.id);
+            else removeToken(georgiaSelect, 'aria-describedby', destinationNote.id);
+        };
+
+        const setSending = (isSending: boolean) => {
+            sending = isSending;
+            // aria-disabled rather than disabled, so keyboard focus stays on the button while sending;
+            // the `sending` flag already blocks a second submit.
+            submitButton.setAttribute('aria-disabled', String(isSending));
+            submitLabel.textContent = isSending ? config.loadingLabel : config.submitLabel;
+            if (sendingStatus) sendingStatus.textContent = isSending ? config.loadingLabel : '';
+            form.setAttribute('aria-busy', String(isSending));
+        };
+
+        const showSuccess = async () => {
+            const animate = !reducedMotion.matches;
+            if (animate) {
+                form.classList.add('is-leaving');
+                await wait(200);
+            }
+            form.hidden = true;
+            successPanel.hidden = false;
+            // Scroll before the fade-up starts: its 12px offset would otherwise be measured too.
+            scrollBelowHeader(successPanel);
+            if (animate) successPanel.classList.add('is-entering');
+            successHeading.focus({ preventScroll: true });
+        };
+
+        const send = async () => {
+            setSending(true);
+            let succeeded = false;
+            try {
+                const token = await turnstile.getToken();
+                submittedAt.value = String(Date.now());
+                const data = new FormData(form);
+                const payload = {
+                    ...inquiryInputFromForm(data),
+                    [HONEYPOT_FIELD]: data.get(HONEYPOT_FIELD) ?? '',
+                    [STARTED_AT_FIELD]: Number(startedAt.value),
+                    [SUBMITTED_AT_FIELD]: Number(submittedAt.value),
+                    [TURNSTILE_FIELD]: token,
+                };
+
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal,
+                }).finally(() => clearTimeout(timeout));
+                const result = (await response.json().catch(() => null)) as { ok?: boolean; errors?: FieldErrors } | null;
+
+                if (response.ok && result?.ok) {
+                    succeeded = true;
+                    setSending(false);
+                    await showSuccess();
+                    return;
+                }
+
+                turnstile.reset();
+                if (result?.errors && Object.keys(result.errors).length > 0) {
+                    showErrors(result.errors);
+                    showSummary(config.errorSummary, 'errors');
+                } else {
+                    showSummary(config.sendFailure, 'failure');
+                }
+            } catch {
+                turnstile.reset();
+                showSummary(config.sendFailure, 'failure');
+            } finally {
+                if (!succeeded) setSending(false);
+            }
+        };
+
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            if (sending) return;
+            const errors = currentErrors();
+            if (Object.keys(errors).length > 0) {
+                showErrors(errors);
+                showSummary(config.errorSummary, 'errors');
+                return;
+            }
+            flagged.clear();
+            hideSummary();
+            void send();
+        });
+
+        const onEdit = () => {
+            syncConditionalQuestions();
+            recheckFlagged();
+        };
+        form.addEventListener('input', onEdit);
+        form.addEventListener('change', onEdit);
+
+        // Browsers can restore ticked boxes and picked options on reload.
+        syncConditionalQuestions();
+
+        // A plain (no-JavaScript) post that failed comes back here as ?status=error.
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('status') === 'error') {
+            params.delete('status');
+            const query = params.toString();
+            history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`);
+            showSummary(config.sendFailure, 'failure');
+        }
+    }
+
+    document.querySelectorAll<HTMLElement>('[data-inquiry]').forEach(initInquiryForm);
+</script>
+
+<style>
+    .inquiry-section {
+        padding: var(--space-14) var(--gutter) var(--space-17);
+    }
+
+    .inquiry-form {
+        max-width: 760px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-7);
+    }
+
+    .inquiry-form[hidden] {
+        display: none;
+    }
+
+    .inquiry-form.is-leaving {
+        opacity: 0;
+        transition: opacity 200ms var(--ease-out);
+    }
+
+    /* Error summary (design spec 6.12) */
+    .error-summary {
+        display: flex;
+        gap: var(--space-3);
+        align-items: flex-start;
+        border: 1px solid var(--color-error);
+        background: var(--color-error-tint);
+        border-radius: var(--radius-xs);
+        padding: var(--space-4) var(--space-5);
+        font-size: 15px;
+        line-height: 1.5;
+        font-weight: 500;
+        color: var(--color-error);
+    }
+
+    .error-summary[hidden] {
+        display: none;
+    }
+
+    .error-summary__icon {
+        flex: 0 0 20px;
+        margin-top: 1px;
+    }
+
+    .form-intro {
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--color-text-muted);
+    }
+
+    .form-noscript {
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--color-text);
+        background: var(--color-bg-alt);
+        border-radius: var(--radius-xs);
+        padding: var(--space-3) 14px;
+    }
+
+    /* Each question spans two grid rows (label, then control with its error and note) and shares them
+       with its neighbor through subgrid, so paired inputs line up even when one label wraps. The 28px
+       row gap is each question's bottom padding; the negative margin cancels it after the last one. */
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: var(--space-6);
+        margin-bottom: calc(-1 * var(--space-7));
+    }
+
+    .field {
+        grid-column: span 1;
+        grid-row: span 2;
+        display: grid;
+        grid-template-rows: subgrid;
+        min-width: 0;
+        margin: 0;
+        padding: 0 0 var(--space-7);
+        border: 0;
+    }
+
+    .field--group,
+    .field--single {
+        display: block;
+    }
+
+    .field__body {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .field[hidden] {
+        display: none;
+    }
+
+    .field--full {
+        grid-column: 1 / -1;
+    }
+
+    .field--single {
+        margin-top: -12px;
+    }
+
+    .field__label {
+        margin: 0;
+        padding: 0 0 10px;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.4;
+        color: var(--color-text);
+    }
+
+    .field__optional {
+        font-weight: 400;
+        color: var(--color-text-muted);
+    }
+
+    .field.is-disabled .field__label {
+        color: var(--color-disabled-text);
+    }
+
+    .field__control {
+        display: block;
+        width: 100%;
+        height: 52px;
+        margin: 0;
+        padding: 0 var(--space-4);
+        border: var(--border-field);
+        border-radius: var(--radius-xs);
+        background: var(--color-surface);
+        color: var(--color-text);
+        font-family: var(--font-body);
+        font-size: 16px;
+        line-height: 1.6;
+        /* Transparent outline keeps a focus indicator in Windows high contrast mode. */
+        outline: 2px solid transparent;
+        transition:
+            border-color 150ms var(--ease-out),
+            box-shadow 150ms var(--ease-out);
+    }
+
+    .field__control::placeholder {
+        color: var(--color-text-muted);
+        opacity: 1;
+    }
+
+    .field__control:hover:not(:disabled):not([aria-invalid='true']) {
+        border-color: var(--color-text);
+    }
+
+    .field__control:focus,
+    .field__control:focus-visible {
+        border-color: var(--color-text);
+        box-shadow: var(--shadow-focus-input);
+        outline: 2px solid transparent;
+        outline-offset: 0;
+    }
+
+    .field__control[aria-invalid='true'] {
+        border-color: var(--color-error);
+    }
+
+    .field__control[aria-invalid='true']:focus {
+        border-color: var(--color-error);
+        box-shadow: var(--shadow-focus-input-error);
+    }
+
+    .field__control:disabled {
+        background: var(--color-disabled-bg);
+        border-color: var(--color-disabled-border);
+        color: var(--color-disabled-text);
+        cursor: not-allowed;
+        opacity: 1;
+        -webkit-text-fill-color: var(--color-disabled-text);
+    }
+
+    .field__control[type='date'] {
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .field__control[type='date']::-webkit-date-and-time-value {
+        text-align: left;
+    }
+
+    .field__select {
+        padding-right: 44px;
+        -webkit-appearance: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%232B2B2B%22%20stroke-width%3D%221.6%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E");
+        background-repeat: no-repeat;
+        background-position: right var(--space-4) center;
+        background-size: 16px;
+        cursor: pointer;
+    }
+
+    /* "Choose one" shows in the muted color until something is picked. */
+    .field__select:has(option[value='']:checked) {
+        color: var(--color-text-muted);
+    }
+
+    .field__select option {
+        color: var(--color-text);
+    }
+
+    .field__textarea {
+        height: auto;
+        min-height: 128px;
+        padding: 14px var(--space-4);
+        resize: vertical;
+    }
+
+    .field__error {
+        display: flex;
+        gap: var(--space-2);
+        align-items: flex-start;
+        margin-top: 10px;
+        font-size: 13px;
+        line-height: 1.45;
+        font-weight: 500;
+        color: var(--color-error);
+    }
+
+    .field__error[hidden] {
+        display: none;
+    }
+
+    .field__error svg {
+        flex: 0 0 15px;
+        margin-top: 1px;
+    }
+
+    .field__note {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-top: 10px;
+        padding: var(--space-3) 14px;
+        border-radius: var(--radius-xs);
+        background: var(--color-bg-alt);
+        font-size: 14px;
+        line-height: 1.5;
+        color: var(--color-text);
+    }
+
+    .field__note[hidden] {
+        display: none;
+    }
+
+    .field__note :global(svg) {
+        flex: 0 0 16px;
+        color: var(--color-accent); /* decorative heart icon, aria-hidden */
+    }
+
+    /* Checkbox option rows: the whole row is the target; the real checkbox stays in the page for keyboards and screen readers. */
+    .choice-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .choice {
+        position: relative;
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
+        min-height: 52px;
+        padding: 14px var(--space-4);
+        border: var(--border-hairline);
+        border-radius: var(--radius-xs);
+        background: var(--color-surface);
+        cursor: pointer;
+        transition:
+            border-color 150ms var(--ease-out),
+            background-color 150ms var(--ease-out),
+            box-shadow 150ms var(--ease-out);
+    }
+
+    .choice:hover {
+        border-color: var(--color-button);
+    }
+
+    .choice:has(.choice__input:checked) {
+        border-color: var(--color-button);
+        background: var(--color-bg-alt);
+    }
+
+    .choice:has(.choice__input[aria-invalid='true']:not(:checked)) {
+        border-color: var(--color-error);
+    }
+
+    .choice:has(.choice__input:focus-visible) {
+        box-shadow:
+            0 0 0 2px var(--color-bg),
+            0 0 0 4px var(--color-accent-text);
+        outline: 2px solid transparent;
+    }
+
+    .choice__input {
+        position: absolute;
+        opacity: 0;
+        width: 1px;
+        height: 1px;
+        margin: 0;
+    }
+
+    .choice__box {
+        flex: 0 0 20px;
+        width: 20px;
+        height: 20px;
+        margin-top: 1px;
+        border: var(--border-field);
+        border-radius: var(--radius-xs);
+        background: var(--color-surface);
+        color: var(--color-on-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition:
+            background-color 150ms var(--ease-out),
+            border-color 150ms var(--ease-out);
+    }
+
+    .choice__input:checked + .choice__box {
+        background: var(--color-button);
+        border-color: var(--color-button);
+    }
+
+    .choice__check {
+        opacity: 0;
+        transform: scale(0.6);
+        transition:
+            transform 200ms var(--ease-spring),
+            opacity 150ms var(--ease-out);
+    }
+
+    .choice__input:checked + .choice__box .choice__check {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .choice__text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 16px;
+        line-height: 1.4;
+        color: var(--color-text);
+    }
+
+    .choice__detail {
+        font-size: 13px;
+        line-height: 1.45;
+        color: var(--color-text-muted);
+    }
+
+    /* "My date isn't set yet" */
+    .single-check {
+        position: relative;
+        display: flex;
+        gap: var(--space-3);
+        align-items: center;
+        align-self: flex-start;
+        min-height: 44px;
+        cursor: pointer;
+        font-size: 15px;
+        line-height: 1.4;
+        color: var(--color-text);
+    }
+
+    .single-check .choice__box {
+        margin-top: 0;
+    }
+
+    .single-check:hover .choice__box {
+        border-color: var(--color-button);
+    }
+
+    .single-check:has(.choice__input:focus-visible) .choice__box {
+        box-shadow:
+            0 0 0 2px var(--color-bg),
+            0 0 0 4px var(--color-accent-text);
+    }
+
+    /* Honeypot: off screen, skipped by keyboards and screen readers. */
+    .inquiry-trap {
+        position: absolute;
+        left: -10000px;
+        top: auto;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+    }
+
+    .form-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding-top: var(--space-7);
+        border-top: var(--border-hairline);
+    }
+
+    .turnstile.is-interactive {
+        margin-bottom: var(--space-5);
+    }
+
+    @media (max-width: 767px) {
+        .inquiry-section {
+            padding: var(--space-10) var(--space-5) var(--space-12);
+        }
+
+        .form-grid,
+        .choice-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .field--half {
+            grid-column: 1 / -1;
+        }
+
+        .form-actions {
+            align-items: stretch;
+        }
+    }
+</style>

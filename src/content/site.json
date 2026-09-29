@@ -19,11 +19,29 @@
     "legal": "© 2026 Curated by Nat"
   },
   "closingPhotos": [
-    { "image": "/src/assets/images/site/closing-nat-filming-sofa.jpg" },
-    { "image": "/src/assets/images/site/closing-couple-kiss.jpg" },
-    { "image": "/src/assets/images/site/closing-bride-laughing.jpg" },
-    { "image": "/src/assets/images/site/closing-bride-staircase.jpg" },
-    { "image": "/src/assets/images/site/closing-nat-filming-standing.jpg" },
-    { "image": "/src/assets/images/site/closing-porch-couple.jpg" }
+    {
+      "name": "Nat filming on the sofa",
+      "image": "/src/assets/images/site/closing-nat-filming-sofa.jpg"
+    },
+    {
+      "name": "Couple kiss",
+      "image": "/src/assets/images/site/closing-couple-kiss.jpg"
+    },
+    {
+      "name": "Bride laughing",
+      "image": "/src/assets/images/site/closing-bride-laughing.jpg"
+    },
+    {
+      "name": "Bride on the staircase",
+      "image": "/src/assets/images/site/closing-bride-staircase.jpg"
+    },
+    {
+      "name": "Nat filming, standing",
+      "image": "/src/assets/images/site/closing-nat-filming-standing.jpg"
+    },
+    {
+      "name": "Couple on the porch",
+      "image": "/src/assets/images/site/closing-porch-couple.jpg"
+    }
   ]
 }

@@ -33,3 +33,11 @@ export const notFound = notFoundData as unknown as NotFoundContent;
 export const services = servicesData as unknown as ServicesContent;
 export const servicesPage = servicesPageData as unknown as ServicesPageContent;
 export const site = siteData as unknown as SiteContent;
+
+/**
+ * Section ids for the four services (/services#weddings and so on). Page ids must be unique, so if
+ * two services were given the same link name in the editor, the later one gets its position added.
+ */
+export const serviceAnchors: string[] = services.items.map((item, index, items) =>
+    items.findIndex((other) => other.anchor === item.anchor) === index ? item.anchor : `${item.anchor}-${index + 1}`,
+);

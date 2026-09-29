@@ -1,0 +1,27 @@
+---
+// Where a plain HTML form post lands after a successful inquiry (the enhanced form shows the
+// same panel in place instead). Not listed in search results.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SuccessPanel from '../../components/inquiry/SuccessPanel.astro';
+import WhatHappensNext from '../../components/inquiry/WhatHappensNext.astro';
+import { inquirePage, inquiryForm } from '../../lib/content';
+---
+
+<BaseLayout title={inquirePage.thanksPage.title} description={inquiryForm.success.body} path="/inquire/thanks" current="inquire" noindex>
+    <section class="thanks">
+        <SuccessPanel headingLevel={1} />
+    </section>
+    <WhatHappensNext />
+</BaseLayout>
+
+<style>
+    .thanks {
+        padding: var(--space-14) var(--gutter) var(--space-17);
+    }
+
+    @media (max-width: 767px) {
+        .thanks {
+            padding: var(--space-10) var(--space-5) var(--space-12);
+        }
+    }
+</style>

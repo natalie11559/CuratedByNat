@@ -135,9 +135,9 @@ a:hover {
     outline: none;
 }
 
-/* Anchored sections clear the sticky header. */
-[id] {
-    scroll-margin-top: var(--header-height);
+/* Anchor jumps and keyboard focus scrolling land clear of the sticky header. */
+html {
+    scroll-padding-top: calc(var(--header-height) + 16px);
 }
 
 /* Utilities */

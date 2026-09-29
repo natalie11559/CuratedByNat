@@ -1,0 +1,102 @@
+---
+// About (design spec 9.2, About.dc.html). Fixed layout; every word and photo comes from the
+// "About page" singleton in Keystatic.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CtaBand from '../components/CtaBand.astro';
+import FeatureColumns from '../components/FeatureColumns.astro';
+import MotifStrip from '../components/MotifStrip.astro';
+import TestimonialPair from '../components/TestimonialPair.astro';
+import TextImageSection from '../components/TextImageSection.astro';
+import { about } from '../lib/content';
+
+const { seo, hero, story, approach, expect, kindWords, closing } = about;
+// FeatureColumns takes a mutable array; the content types are readonly.
+const expectItems = [...expect.items];
+---
+
+<BaseLayout title={seo.title} description={seo.description} path="/about" current="about">
+    <TextImageSection
+        priority
+        headingLevel={1}
+        eyebrow={hero.eyebrow}
+        title={hero.title}
+        subhead={hero.subhead}
+        photo={hero.photo}
+        ratio="4 / 5"
+        imageSide="right"
+        bg="alt"
+        frame
+    />
+
+    <TextImageSection title={story.title} paragraphs={story.paragraphs} signature={story.signature} bg="base" />
+
+    <TextImageSection
+        eyebrow={approach.eyebrow}
+        title={approach.title}
+        paragraphs={approach.paragraphs}
+        photo={approach.photo}
+        ratio="4 / 5"
+        imageSide="left"
+        bg="alt"
+    />
+
+    <section class="about-block about-expect bg-base">
+        <div class="about-block__inner reveal">
+            <h2 class="about-block__title t-h2">{expect.title}</h2>
+            <FeatureColumns items={expectItems} variant="expect" />
+        </div>
+    </section>
+
+    <MotifStrip bg="base" />
+
+    <section class="about-block about-kind-words bg-base">
+        <div class="about-block__inner reveal">
+            <h2 class="about-block__title t-h2">{kindWords.title}</h2>
+            <TestimonialPair
+                testimonials={kindWords.testimonials}
+                readMoreLabel={kindWords.readMoreLabel}
+                readLessLabel={kindWords.readLessLabel}
+            />
+        </div>
+    </section>
+
+    <CtaBand
+        variant="blush"
+        title={closing.title}
+        body={closing.body}
+        buttonLabel={closing.buttonLabel}
+        buttonHref="/inquire"
+    />
+</BaseLayout>
+
+<style>
+    /* "What you can expect" and "Kind words": a centered H2 over full-width content (About.dc.html). */
+    .about-block {
+        padding: var(--section-pad-y) var(--gutter);
+    }
+
+    /* Kind words follows the Motif Strip, which supplies the space above it. */
+    .about-kind-words {
+        padding-top: var(--space-2);
+    }
+
+    .about-block__inner {
+        max-width: var(--container-max);
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-11);
+    }
+
+    .about-block__title {
+        text-align: center;
+        color: var(--color-text);
+    }
+
+    @media (max-width: 767px) {
+        .about-block__inner {
+            gap: 36px;
+        }
+    }
+</style>

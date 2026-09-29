@@ -23,7 +23,11 @@ export const site = singleton({
         social: fields.object(
             {
                 instagramUrl: fields.url({ label: 'Instagram profile link', validation: { isRequired: true } }),
-                instagramHandle: fields.text({ label: 'Instagram handle', description: 'Example: @curated.bynat', validation: { length: { min: 1 } } }),
+                instagramHandle: fields.text({
+                    label: 'Instagram handle',
+                    description: 'Shown in the footer, the phone menu and under the Follow along button on Home. Type it in lowercase. Example: @curated.bynat',
+                    validation: { length: { min: 1 } },
+                }),
                 tiktokUrl: fields.url({ label: 'TikTok profile link', validation: { isRequired: true } }),
                 tiktokHandle: fields.text({ label: 'TikTok handle', validation: { length: { min: 1 } } }),
             },
@@ -39,12 +43,22 @@ export const site = singleton({
             { label: 'Footer' },
         ),
         closingPhotos: fields.array(
-            decorativePhotoField({ label: 'Photo', folder: 'site' }),
+            fields.object(
+                {
+                    name: fields.text({
+                        label: 'Short name (only you see this)',
+                        description: 'Helps you recognise the photo in this list, for example "Bride on the porch".',
+                    }),
+                    ...decorativePhotoField({ label: 'Photo', folder: 'site' }).fields,
+                },
+                { label: 'Slideshow photo' },
+            ),
             {
                 label: 'Closing banner slideshow photos',
                 description:
                     'The photos that slide slowly behind "Inquire now" at the bottom of Home and Services. Use 4 to 12 photos. Drag to reorder. Text sits on top, so busy or very bright photos are harder to read over.',
-                itemLabel: (props) => props.fields.image.value?.filename ?? 'Photo',
+                itemLabel: (props) =>
+                    props.fields.image.value ? props.fields.name.value.trim() || 'Slideshow photo' : '⚠ Needs a photo',
                 validation: { length: { min: 4, max: 12 } },
             },
         ),

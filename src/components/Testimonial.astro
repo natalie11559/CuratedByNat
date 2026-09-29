@@ -1,0 +1,269 @@
+---
+// Design-spec 6.9, `About.dc.html` (card) and `Services.dc.html` (feature). Quotes are shown
+// verbatim. On phones a long quote starts collapsed to its first ~260 characters with a
+// "Read more" button; the full quote is always in the page for screen readers and without JS.
+interface Props {
+    quote: string;
+    name: string;
+    variant?: 'card' | 'feature';
+    /** Collapse quotes over 260 characters on phones. Defaults to on for cards, off for the feature quote (as designed). */
+    collapsible?: boolean;
+    readMoreLabel?: string;
+    readLessLabel?: string;
+    /** Unique id prefix when the same person is quoted twice on one page. */
+    id?: string;
+    class?: string;
+    [attribute: `data-${string}`]: unknown;
+}
+
+const {
+    quote,
+    name,
+    variant = 'card',
+    collapsible = variant === 'card',
+    readMoreLabel = 'Read more',
+    readLessLabel = 'Read less',
+    id,
+    class: className,
+    ...attributes
+} = Astro.props;
+
+const collapseLimit = 260;
+const text = quote.trim();
+const canCollapse = collapsible && text.length > collapseLimit;
+// Cut at the last word boundary before the limit, as in `About.dc.html`.
+const lastSpace = text.lastIndexOf(' ', collapseLimit);
+const excerpt = `${text.slice(0, lastSpace > 0 ? lastSpace : collapseLimit).trimEnd()}…`;
+const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+const fullTextId = `${id ?? `quote-${slug}`}-full`;
+---
+
+<figure
+    class:list={['testimonial', `testimonial--${variant}`, canCollapse && 'testimonial--collapsible', className]}
+    data-testimonial={canCollapse ? '' : undefined}
+    {...attributes}
+>
+    <span class="testimonial__mark" aria-hidden="true">“</span>
+
+    {
+        canCollapse ? (
+            <div class="testimonial__body">
+                <p class="testimonial__quote testimonial__excerpt" aria-hidden="true">
+                    {excerpt}
+                </p>
+                <div class="testimonial__expander" id={fullTextId}>
+                    <div class="testimonial__expander-inner">
+                        <blockquote class="testimonial__quote">
+                            <p>{text}</p>
+                        </blockquote>
+                    </div>
+                </div>
+            </div>
+        ) : (
+            <blockquote class="testimonial__quote">
+                <p>{text}</p>
+            </blockquote>
+        )
+    }
+
+    {
+        canCollapse && (
+            <button
+                class="testimonial__toggle"
+                type="button"
+                aria-expanded="false"
+                aria-controls={fullTextId}
+                data-testimonial-toggle
+                data-label-more={readMoreLabel}
+                data-label-less={readLessLabel}
+            >
+                {readMoreLabel}
+            </button>
+        )
+    }
+
+    <figcaption class="testimonial__name">
+        <span class="testimonial__rule" aria-hidden="true"></span>
+        <span>{name}</span>
+        {variant === 'feature' && <span class="testimonial__rule" aria-hidden="true" />}
+    </figcaption>
+</figure>
+
+<script>
+    document.querySelectorAll<HTMLElement>('[data-testimonial]').forEach((testimonial) => {
+        const toggle = testimonial.querySelector<HTMLButtonElement>('[data-testimonial-toggle]');
+        if (!toggle) return;
+        toggle.addEventListener('click', () => {
+            const expanded = toggle.getAttribute('aria-expanded') !== 'true';
+            toggle.setAttribute('aria-expanded', String(expanded));
+            toggle.textContent = (expanded ? toggle.dataset.labelLess : toggle.dataset.labelMore) ?? '';
+            testimonial.classList.toggle('is-expanded', expanded);
+        });
+    });
+</script>
+
+<style>
+    .testimonial {
+        --testimonial-bg: var(--color-bg);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        margin: 0;
+        color: var(--color-text);
+    }
+
+    .testimonial--card {
+        padding: 40px;
+        border: var(--border-hairline);
+        border-radius: var(--radius-sm);
+        background: var(--testimonial-bg);
+    }
+
+    .testimonial__mark {
+        display: block;
+        height: 32px;
+        font-family: var(--font-heading);
+        font-size: 72px;
+        line-height: 0.6;
+        color: var(--color-accent);
+    }
+
+    .testimonial__quote {
+        margin: 0;
+        font-family: var(--font-heading);
+        font-size: 22px;
+        line-height: 1.55;
+        text-wrap: pretty;
+    }
+
+    .testimonial__quote p {
+        text-wrap: inherit;
+    }
+
+    .testimonial__name {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.4;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+    }
+
+    .testimonial__rule {
+        flex: 0 0 24px;
+        height: 1px;
+        background: var(--color-accent);
+    }
+
+    .testimonial--feature {
+        max-width: 840px;
+        margin: 0 auto;
+        align-items: center;
+        gap: 24px;
+        text-align: center;
+    }
+
+    .testimonial--feature .testimonial__mark {
+        height: 36px;
+        font-size: 88px;
+    }
+
+    .testimonial--feature .testimonial__quote {
+        font-size: 28px;
+        line-height: 1.5;
+    }
+
+    /* Collapsible quotes: the excerpt only shows on phones with JavaScript running. */
+    .testimonial__excerpt,
+    .testimonial__toggle {
+        display: none;
+    }
+
+    .testimonial__toggle {
+        align-self: flex-start;
+        min-height: 44px;
+        padding: 4px 0;
+        border: 0;
+        background: transparent;
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.4;
+        color: var(--color-button);
+        text-decoration: underline;
+        text-decoration-color: var(--color-accent);
+        text-underline-offset: 4px;
+    }
+
+    .testimonial__toggle:hover {
+        color: var(--color-button-hover);
+    }
+
+    .testimonial__toggle:focus-visible {
+        outline-offset: 2px;
+    }
+
+    .testimonial--feature .testimonial__toggle {
+        align-self: center;
+    }
+
+    @media (max-width: 767px) {
+        .testimonial--card {
+            padding: 28px 24px;
+        }
+
+        .testimonial__quote {
+            font-size: 19px;
+        }
+
+        .testimonial--feature .testimonial__quote {
+            font-size: 21px;
+        }
+
+        /*
+         * Collapsed: the excerpt sets the height and the full quote sits over it in a 0fr grid
+         * row. Expanding animates the row to 1fr; the full quote grows over the excerpt (same
+         * first lines) and then past it. Line breaks must match, so no `pretty` wrapping here.
+         */
+        :global(.js) .testimonial--collapsible .testimonial__body {
+            display: grid;
+        }
+
+        :global(.js) .testimonial--collapsible .testimonial__quote {
+            text-wrap: wrap;
+        }
+
+        :global(.js) .testimonial--collapsible .testimonial__excerpt {
+            display: block;
+            grid-area: 1 / 1;
+        }
+
+        :global(.js) .testimonial--collapsible .testimonial__expander {
+            grid-area: 1 / 1;
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 300ms var(--ease-out);
+        }
+
+        :global(.js) .testimonial--collapsible.is-expanded .testimonial__expander {
+            grid-template-rows: 1fr;
+        }
+
+        /* 1px rather than 0 so every screen reader still treats the full quote as on screen. */
+        :global(.js) .testimonial--collapsible .testimonial__expander-inner {
+            min-height: 1px;
+            overflow: hidden;
+            background: var(--testimonial-bg);
+        }
+
+        :global(.js) .testimonial--collapsible .testimonial__toggle {
+            display: inline-flex;
+            align-items: center;
+        }
+    }
+</style>

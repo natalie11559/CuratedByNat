@@ -3,7 +3,7 @@ import type { ImageMetadata } from 'astro';
 // Keystatic stores each photo as a path like "/src/assets/images/home/hero/image.jpg".
 // Globbing the folder lets Astro optimize any photo Nat uploads without a code change.
 const imageModules = import.meta.glob<{ default: ImageMetadata }>(
-    '/src/assets/images/**/*.{jpg,jpeg,png,webp,avif,JPG,JPEG,PNG,WEBP}',
+    '/src/assets/images/**/*.{jpg,jpeg,png,webp,avif,gif,tif,tiff,JPG,JPEG,PNG,WEBP,AVIF,GIF,TIF,TIFF}',
     { eager: true },
 );
 
@@ -19,7 +19,7 @@ export type FocusHorizontal = 'left' | 'center' | 'right';
 
 const verticalPositions: Record<FocusVertical, string> = {
     top: '12%',
-    upper: '32%',
+    upper: '30%',
     center: '50%',
     lower: '70%',
     bottom: '88%',

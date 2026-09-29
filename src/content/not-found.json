@@ -1,1 +1,11 @@
-{}
+{
+  "seo": {
+    "title": "Page not found | Curated by Nat",
+    "description": "This page didn't make the final cut. Head back to the Curated by Nat home page, or send an inquiry about your celebration."
+  },
+  "eyebrow": "Page not found",
+  "headline": "This page didn't make the final cut.",
+  "body": "The link may be old or mistyped, so let's get you back to the good stuff.",
+  "homeButtonLabel": "Take me home",
+  "inquireButtonLabel": "Send an inquiry"
+}

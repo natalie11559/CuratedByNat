@@ -1,0 +1,78 @@
+---
+// Design-spec 6.8 and `Motif Strip.dc.html`: hairline, the four rose motif icons, hairline.
+// Purely decorative, so it is hidden from screen readers.
+import MotifIcon from './MotifIcon.astro';
+
+interface Props {
+    bg?: 'base' | 'alt';
+    class?: string;
+    [attribute: `data-${string}`]: unknown;
+}
+
+const { bg = 'base', class: className, ...attributes } = Astro.props;
+const icons = ['coupe', 'bow', 'heart', 'heel'] as const;
+---
+
+<div class:list={['motif-strip', bg === 'alt' ? 'bg-alt' : 'bg-base', className]} aria-hidden="true" {...attributes}>
+    <span class="motif-strip__line"></span>
+    <span class="motif-strip__icons">
+        {
+            icons.map((name) => (
+                <span class:list={['motif-strip__icon', `motif-strip__icon--${name}`]}>
+                    <MotifIcon name={name} size={20} strokeWidth={1.4} />
+                </span>
+            ))
+        }
+    </span>
+    <span class="motif-strip__line"></span>
+</div>
+
+<style>
+    .motif-strip {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        padding: 48px var(--gutter);
+    }
+
+    .motif-strip__line {
+        flex: 1;
+        max-width: 160px;
+        height: 1px;
+        background: var(--color-border);
+    }
+
+    .motif-strip__icons {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        color: var(--color-accent);
+    }
+
+    .motif-strip__icon {
+        display: flex;
+        transition: transform 240ms var(--ease-spring);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .motif-strip__icon--coupe:hover,
+        .motif-strip__icon--heel:hover {
+            transform: translateY(-3px) rotate(-8deg);
+        }
+
+        .motif-strip__icon--bow:hover {
+            transform: translateY(-3px) rotate(8deg);
+        }
+
+        .motif-strip__icon--heart:hover {
+            transform: translateY(-3px) scale(1.15);
+        }
+    }
+
+    @media (max-width: 767px) {
+        .motif-strip {
+            padding: 32px 20px;
+        }
+    }
+</style>

@@ -1,6 +1,23 @@
 import { fields } from '@keystatic/core';
 
 /**
+ * Keystatic's Save does nothing, with no message, while a required box inside a list item is empty.
+ * List item labels therefore show what still needs filling in, so Nat can find it.
+ */
+export const EMPTY_ITEM_LABEL = '⚠ Empty: type something here or remove this item';
+
+export function textItemLabel(value: string): string {
+    return value.trim() ? value : EMPTY_ITEM_LABEL;
+}
+
+/** Returns a warning for a photo slot that is missing its file or its description, otherwise null. */
+export function photoSlotWarning(photo: { fields: { image: { value: unknown }; alt?: { value: string } } }): string | null {
+    if (!photo.fields.image.value) return '⚠ Needs a photo';
+    if (photo.fields.alt && !photo.fields.alt.value.trim()) return '⚠ Needs a photo description';
+    return null;
+}
+
+/**
  * Every photo slot in the editor: the file, its alt text, and where to keep the crop focused.
  * `folder` must be unique per singleton. Keystatic renames and cleans up files inside a
  * singleton's folder on save, so two singletons sharing a folder could delete each other's photos.
@@ -25,7 +42,8 @@ export function photoField({
         {
             image: fields.image({
                 label: 'Photo',
-                description: 'JPG, PNG or WebP. Photos straight from your phone are fine; the site resizes them.',
+                description:
+                    'Use a JPG or PNG (WebP also works). Photos from your phone are fine; the site resizes them. HEIC photos from a Mac or iPhone must be exported as JPEG first, or the site cannot show them.',
                 directory,
                 publicPath: `/${directory}/`,
                 validation: { isRequired: true },
@@ -35,7 +53,10 @@ export function photoField({
                 description:
                     altDescription ??
                     'Describe what is in the photo in one sentence, for visitors who use screen readers. Required. If you change the photo, update this too.',
-                validation: { length: { min: 1, max: 250 } },
+                validation: {
+                    length: { min: 1, max: 250 },
+                    pattern: { regex: /\S/, message: 'Describe the photo in words.' },
+                },
             }),
             focusVertical: fields.select({
                 label: 'Keep in view (up and down)',
@@ -70,6 +91,8 @@ export function decorativePhotoField({ label, folder, description }: { label: st
         {
             image: fields.image({
                 label: 'Photo',
+                description:
+                    'Use a JPG or PNG (WebP also works). HEIC photos from a Mac or iPhone must be exported as JPEG first, or the site cannot show them.',
                 directory,
                 publicPath: `/${directory}/`,
                 validation: { isRequired: true },

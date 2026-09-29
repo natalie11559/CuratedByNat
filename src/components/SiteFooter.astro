@@ -1,4 +1,233 @@
 ---
-// Placeholder; replaced by the components agent.
+// Design-spec 6.3 and `Site Footer.dc.html`.
+import { Image } from 'astro:assets';
+import logo from '../assets/images/logo-cn.png';
+import Button from './Button.astro';
+import SocialIcon from './SocialIcon.astro';
+import { site } from '../lib/content';
+import { SITE_NAME } from '../lib/seo';
+
+const { navigation, social, footer } = site;
+
+const footerLinks = [
+    { label: navigation.home, href: '/' },
+    { label: navigation.about, href: '/about' },
+    { label: navigation.services, href: '/services' },
+    { label: navigation.inquire, href: '/inquire' },
+];
+
+// Platform names are proper nouns, not editable copy.
+const socialLinks = [
+    { icon: 'instagram', platform: 'Instagram', href: social.instagramUrl, handle: social.instagramHandle },
+    { icon: 'tiktok', platform: 'TikTok', href: social.tiktokUrl, handle: social.tiktokHandle },
+] as const;
 ---
-<footer></footer>
+
+<footer class="site-footer">
+    <div class="site-footer__inner">
+        <div class="site-footer__brand">
+            <Image class="site-footer__logo" src={logo} alt={SITE_NAME} width={88} height={88} widths={[88, 176, 264]} sizes="88px" />
+            <p class="site-footer__tagline">{footer.tagline}</p>
+            <p class="site-footer__location">{footer.locationLine}</p>
+        </div>
+
+        <nav class="site-footer__nav" aria-label="Footer">
+            <ul class="site-footer__nav-list" role="list">
+                {
+                    footerLinks.map((link) => (
+                        <li>
+                            <a class="site-footer__nav-link" href={link.href}>
+                                {link.label}
+                            </a>
+                        </li>
+                    ))
+                }
+            </ul>
+        </nav>
+
+        <div class="site-footer__actions">
+            <Button label={footer.buttonLabel} href="/inquire" />
+            <ul class="site-footer__social" role="list">
+                {
+                    socialLinks.map((link) => (
+                        <li>
+                            <a class="site-footer__social-link" href={link.href} target="_blank" rel="noopener">
+                                <SocialIcon name={link.icon} size={18} />
+                                <span>
+                                    {link.platform} {link.handle}
+                                    <span class="visually-hidden"> (opens in a new tab)</span>
+                                </span>
+                            </a>
+                        </li>
+                    ))
+                }
+            </ul>
+        </div>
+    </div>
+
+    <p class="site-footer__legal">{footer.legal}</p>
+</footer>
+
+<style>
+    .site-footer {
+        background: var(--color-bg-alt);
+        border-top: var(--border-hairline);
+        color: var(--color-text);
+    }
+
+    .site-footer__inner {
+        max-width: var(--container-max);
+        margin: 0 auto;
+        padding: 72px var(--gutter) 56px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+        gap: 48px;
+    }
+
+    .site-footer__brand {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .site-footer__logo {
+        width: 88px;
+        height: 88px;
+    }
+
+    .site-footer__tagline {
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.4;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+    }
+
+    .site-footer__location {
+        max-width: 320px;
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--color-text-muted);
+    }
+
+    .site-footer__nav-list {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .site-footer__nav-link {
+        display: flex;
+        align-items: center;
+        min-height: 36px;
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 1.25;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--color-text);
+        text-decoration: none;
+        transition: color 200ms var(--ease-out);
+    }
+
+    .site-footer__actions {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .site-footer__social {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .site-footer__social-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 40px;
+        font-size: 14px;
+        line-height: 1.4;
+        color: var(--color-text);
+        text-decoration: none;
+        transition: color 200ms var(--ease-out);
+    }
+
+    .site-footer__social-link :global(svg) {
+        flex: 0 0 18px;
+    }
+
+    .site-footer__nav-link:hover,
+    .site-footer__social-link:hover {
+        color: var(--color-accent-text);
+    }
+
+    .site-footer__nav-link:focus-visible,
+    .site-footer__social-link:focus-visible {
+        outline-offset: 2px;
+    }
+
+    .site-footer__legal {
+        padding: 20px;
+        border-top: var(--border-hairline);
+        font-size: 12px;
+        line-height: 1.4;
+        text-align: center;
+        color: var(--color-text-muted);
+    }
+
+    /* Tablet: narrower nav column so the button and social rows fit on one line. */
+    @media (max-width: 1023px) {
+        .site-footer__inner {
+            grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr) minmax(0, 1.2fr);
+            gap: 32px;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .site-footer__inner {
+            padding: 56px 20px 40px;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 40px;
+            justify-items: center;
+            text-align: center;
+        }
+
+        .site-footer__brand,
+        .site-footer__nav-list,
+        .site-footer__social {
+            align-items: center;
+        }
+
+        .site-footer__actions {
+            width: 100%;
+            align-items: stretch;
+        }
+
+        .site-footer__social {
+            align-self: center;
+        }
+
+        /* Touch targets: 44px rows on phones (the design's 36px and 40px rows are for pointer use). */
+        .site-footer__nav-list,
+        .site-footer__social {
+            gap: 0;
+        }
+
+        .site-footer__nav-link,
+        .site-footer__social-link {
+            min-height: 44px;
+        }
+    }
+</style>

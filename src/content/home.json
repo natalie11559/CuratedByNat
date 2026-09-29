@@ -1,1 +1,61 @@
-{}
+{
+  "seo": {
+    "title": "Curated by Nat | Wedding & Event Content Creator in Georgia",
+    "description": "Candid, social-first content for weddings, bachelorette weekends, bridal events, and celebrations in Georgia. Your day, as it really felt. Inquire."
+  },
+  "hero": {
+    "eyebrow": "Wedding & Event Content",
+    "titleStart": "Curated",
+    "titleScript": "by",
+    "titleEnd": "Nat",
+    "buttonLabel": "Inquire now",
+    "photo": {
+      "image": "/src/assets/images/home/hero.jpg",
+      "alt": "Bride in a strapless lace gown holding white roses and green hydrangeas on a white columned porch",
+      "focusVertical": "upper",
+      "focusHorizontal": "center"
+    },
+    "phoneFocus": {
+      "focusVertical": "upper",
+      "focusHorizontal": "center"
+    }
+  },
+  "intro": {
+    "eyebrow": "Hi, I'm Nat",
+    "title": "Your day, as it really felt.",
+    "paragraphs": [
+      "I create candid, social-first content for weddings, bachelorette weekends, bridal events, and celebrations, capturing the little moments, the big feelings, and everything in between."
+    ],
+    "buttonLabel": "Get to know me",
+    "photo": {
+      "image": "/src/assets/images/home/intro.jpg",
+      "alt": "Nat smiling, seated on a green velvet sofa in a blush top",
+      "focusVertical": "upper",
+      "focusHorizontal": "center"
+    }
+  },
+  "capturing": {
+    "eyebrow": "Captured with intention",
+    "title": "It's a balance of capturing & curating.",
+    "paragraphs": [
+      "I capture your day as it naturally unfolds, then curate your photos and videos into a collection of moments that feel intentional, effortless, and completely you. Not just random clips, but a story of the day, exactly as it felt."
+    ],
+    "buttonLabel": "How it works",
+    "photo": {
+      "image": "/src/assets/images/home/capturing.jpg",
+      "alt": "Floral heels and white wide-leg pants",
+      "focusVertical": "lower",
+      "focusHorizontal": "center"
+    }
+  },
+  "servicesSection": {
+    "eyebrow": "Services",
+    "title": "Content for every celebration.",
+    "buttonLabel": "View services"
+  },
+  "closing": {
+    "eyebrow": "Let's make something worth reliving.",
+    "title": "Inquire now.",
+    "buttonLabel": "Send an inquiry"
+  }
+}

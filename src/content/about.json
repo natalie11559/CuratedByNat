@@ -1,1 +1,77 @@
-{}
+{
+  "seo": {
+    "title": "Meet Nat | Georgia Wedding & Event Content Creator",
+    "description": "Meet Nat, the creator behind Curated by Nat. Candid, social-first content for weddings, bachelorettes, and celebrations in Georgia, curated with care."
+  },
+  "hero": {
+    "eyebrow": "About",
+    "title": "Hi, I'm Natalie!",
+    "subhead": "The one at your celebration catching the moments everyone else is too busy living.",
+    "photo": {
+      "image": "/src/assets/images/about/hero.jpg",
+      "alt": "Nat smiling, seated on a green velvet sofa in a blush top, white pants and floral heels",
+      "focusVertical": "lower",
+      "focusHorizontal": "center"
+    }
+  },
+  "story": {
+    "title": "How it started",
+    "paragraphs": [
+      "Ever since I was little, I've always loved creating, capturing moments, and finding new ways to tell a story. I've always dreamed of having a business of my own where I could turn my creativity into something meaningful, and that dream became Curated by Nat!",
+      "Curated by Nat is a wedding and event content creation business focused on capturing the candid little details that make your celebration so special. From the big moments to the in between moments, I'm there to curate the pieces of your day that you'll want to look back on for years to come."
+    ],
+    "signature": "xo, Nat"
+  },
+  "approach": {
+    "eyebrow": "My approach",
+    "title": "Capture first. Curate after.",
+    "paragraphs": [
+      "On the day, I keep it candid. I'm not there to pose you or run your timeline. I'm there to catch what actually happens: the nervous laugh before the vows, the bridesmaid who can't stop crying, the dance floor after the heels come off.",
+      "Everything is captured on iPhone, so your content looks and feels like it belongs on your feed. After, I pull together the moments that tell your story. You get a collection that feels intentional, not a camera roll you'll never scroll through.",
+      "Content creation doesn't replace your photographer or videographer. It's the layer in between: social-first, behind the scenes, and made to be shared."
+    ],
+    "photo": {
+      "image": "/src/assets/images/about/approach.jpg",
+      "alt": "Nat in a striped knit set holding her phone on a handheld grip, with a laptop on her lap",
+      "focusVertical": "lower",
+      "focusHorizontal": "center"
+    }
+  },
+  "expect": {
+    "title": "What you can expect",
+    "items": [
+      {
+        "title": "Candid, not staged.",
+        "body": "Real moments as they unfold, not a shot list."
+      },
+      {
+        "title": "Curated, not dumped.",
+        "body": "A collection shaped into a story, not every clip I took."
+      },
+      {
+        "title": "Present, not in the way.",
+        "body": "I stay close enough to catch it and far enough to let you live it."
+      }
+    ]
+  },
+  "kindWords": {
+    "title": "Kind words",
+    "testimonials": [
+      {
+        "quote": "I LOVED having you there!! I love that I have the sweetest memories in my camera roll where I didn't even realize a camera was on me. The reel that you made was literally so perfect and I loved getting to rewatch moments throughout the day because it flew by so fast! You have a great eye for little details. I'm so grateful you were there",
+        "name": "Emory Morris"
+      },
+      {
+        "quote": "Natalie was absolutely incredible to work with! She is such a kind, thoughtful, and talented person, and she made me feel so comfortable in front of the camera. She has an amazing ability to know exactly when to step in and capture a moment and when to let us simply enjoy it. She captured every clip I asked for, plus so many incredible moments I never would have thought of. She paid attention to every little detail, which allowed me, my bridesmaids, and my family to be fully present without worrying about what was being captured. She has such an amazing eye for detail and knows exactly what looks good. I truly cannot recommend Natalie enough. She was one of the best decisions we made for our wedding day!",
+        "name": "Lani Pinckney"
+      }
+    ],
+    "readMoreLabel": "Read more",
+    "readLessLabel": "Read less"
+  },
+  "closing": {
+    "title": "Sound like your kind of day?",
+    "body": "Tell me what you're celebrating and I'll take it from there.",
+    "buttonLabel": "Inquire now"
+  }
+}

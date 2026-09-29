@@ -1,1 +1,23 @@
-{}
+{
+  "hero": {
+    "eyebrow": "Inquire",
+    "title": "Tell me about your celebration.",
+    "body": "Whether it's your wedding, your best friend's bachelorette, or a birthday worth documenting, I'd love to hear about it. Share a few details below and I'll follow up with my availability and packages.",
+    "note": "Planning for someone else? Bridesmaids, moms, and best friends are welcome to inquire too."
+  },
+  "nextSteps": {
+    "title": "What happens next",
+    "steps": [
+      "I read every detail and check my calendar for your date.",
+      "You'll get an email with my availability and packages.",
+      "If it feels like a fit, we lock in your date and start planning the fun part."
+    ]
+  },
+  "thanksPage": {
+    "title": "Thank you | Curated by Nat"
+  },
+  "seo": {
+    "title": "Inquire | Curated by Nat, Wedding & Event Content in GA",
+    "description": "Tell Nat about your wedding, bachelorette weekend, bridal event, or celebration in Georgia. Share a few details to get her availability and packages."
+  }
+}

@@ -1,0 +1,43 @@
+---
+// "What happens next" (content doc 3.4, Inquire.dc.html): below the form on /inquire and on /inquire/thanks.
+import Steps from '../Steps.astro';
+import { inquirePage } from '../../lib/content';
+
+const { title, steps } = inquirePage.nextSteps;
+---
+
+<section class="next bg-alt reveal" aria-labelledby="what-happens-next">
+    <div class="next__inner">
+        <h2 class="t-h2 next__title" id="what-happens-next">{title}</h2>
+        <Steps steps={steps.map((body) => ({ body }))} columns={3} bg="alt" />
+    </div>
+</section>
+
+<style>
+    .next {
+        padding: var(--space-16) var(--gutter);
+    }
+
+    .next__inner {
+        max-width: 1000px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-11);
+    }
+
+    .next__title {
+        text-align: center;
+    }
+
+    @media (max-width: 767px) {
+        .next {
+            padding: var(--space-12) var(--space-5);
+        }
+
+        .next__inner {
+            gap: 36px;
+        }
+    }
+</style>

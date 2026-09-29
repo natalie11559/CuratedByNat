@@ -1,0 +1,198 @@
+---
+// Design-spec 6.10: numbered steps (Services "How it works", Inquire "What happens next").
+// Renders only the list; the page renders the section and its H2 around it.
+interface Step {
+    /** Optional: steps without a title show the body alone in dark text (Inquire "What happens next"). */
+    title?: string;
+    body: string;
+}
+
+interface Props {
+    steps: readonly Step[];
+    /** Columns from 1024px up. Defaults to one column per step. */
+    columns?: number;
+    /** Background of the section the list sits in, so each circle hides the connecting line behind it. */
+    bg?: 'base' | 'alt';
+    headingLevel?: 2 | 3 | 4;
+    class?: string;
+}
+
+const { steps, columns = steps.length, bg = 'base', headingLevel = 3, class: className } = Astro.props;
+const TitleTag = `h${headingLevel}` as 'h2' | 'h3' | 'h4';
+
+// Tablet (768 to 1023px): lists longer than three steps fold into two columns (spec section 4).
+const foldsOnTablet = columns > 3;
+const tabletColumns = foldsOnTablet ? 2 : columns;
+const isRowEnd = (index: number) => (index + 1) % columns === 0 || index === steps.length - 1;
+---
+
+<ol
+    class:list={['steps', `steps--${bg}`, foldsOnTablet && 'steps--folds-on-tablet', className]}
+    role="list"
+    style={`--steps-columns: ${columns}; --steps-tablet-columns: ${tabletColumns};`}
+>
+    {
+        steps.map((step, index) => (
+            <li class:list={['steps__item', isRowEnd(index) && 'steps__item--row-end']}>
+                <span class="steps__numeral" aria-hidden="true">
+                    {index + 1}
+                </span>
+                <div class:list={['steps__text', !step.title && 'steps__text--solo']}>
+                    {step.title && <TitleTag class="steps__title">{step.title}</TitleTag>}
+                    <p class:list={['steps__body', !step.title && 'steps__body--solo']}>{step.body}</p>
+                </div>
+            </li>
+        ))
+    }
+</ol>
+
+<style>
+    .steps {
+        --steps-gap: 32px;
+        --steps-circle: 56px;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        grid-template-columns: repeat(var(--steps-columns), minmax(0, 1fr));
+        gap: var(--steps-gap);
+    }
+
+    .steps--base {
+        --steps-circle-bg: var(--color-bg);
+    }
+
+    .steps--alt {
+        --steps-circle-bg: var(--color-bg-alt);
+    }
+
+    .steps__item {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-5);
+        text-align: center;
+    }
+
+    /* The connecting line: each step draws the segment from its circle's center to the next
+       circle's center, so the line always ends inside a circle, however the list wraps. */
+    .steps__item::after {
+        content: '';
+        position: absolute;
+        top: calc(var(--steps-circle) / 2);
+        left: 50%;
+        width: calc(100% + var(--steps-gap));
+        height: 1px;
+        background: var(--color-accent);
+        opacity: 0.6;
+    }
+
+    .steps__item--row-end::after {
+        display: none;
+    }
+
+    .steps__numeral {
+        position: relative;
+        z-index: 1;
+        flex: 0 0 var(--steps-circle);
+        width: var(--steps-circle);
+        height: var(--steps-circle);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: var(--border-accent);
+        border-radius: var(--radius-full);
+        background: var(--steps-circle-bg);
+        font-family: var(--font-heading);
+        font-size: 24px;
+        line-height: 1;
+        font-variant-numeric: lining-nums;
+        color: var(--color-accent-text);
+    }
+
+    .steps__text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+
+    .steps__title {
+        margin: 0;
+        font-family: var(--font-heading);
+        font-weight: 400;
+        font-size: 24px;
+        line-height: 1.2;
+        color: var(--color-text);
+    }
+
+    .steps__body {
+        font-size: 15px;
+        line-height: 1.65;
+        color: var(--color-text-muted);
+    }
+
+    .steps__body--solo {
+        max-width: 280px;
+        font-size: 16px;
+        color: var(--color-text);
+    }
+
+    @media (min-width: 768px) and (max-width: 1023px) {
+        .steps {
+            grid-template-columns: repeat(var(--steps-tablet-columns), minmax(0, 1fr));
+        }
+
+        /* Folded into rows of two, a line would link pairs and read as groups, so it is left out. */
+        .steps--folds-on-tablet {
+            row-gap: var(--space-10);
+        }
+
+        .steps--folds-on-tablet .steps__item::after {
+            display: none;
+        }
+
+        /* An odd last step sits centered under the pair above it. */
+        .steps--folds-on-tablet .steps__item:last-child:nth-child(odd) {
+            grid-column: 1 / -1;
+            justify-self: center;
+            width: calc((100% - var(--steps-gap)) / 2);
+        }
+    }
+
+    @media (max-width: 767px) {
+        .steps {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .steps__item {
+            flex-direction: row;
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        /* Vertical line through the circle centers, from each circle down to the next. */
+        .steps__item::after,
+        .steps__item--row-end::after {
+            display: block;
+            top: calc(var(--steps-circle) / 2);
+            left: calc(var(--steps-circle) / 2);
+            width: 1px;
+            height: calc(100% + var(--steps-gap));
+        }
+
+        .steps__item:last-child::after {
+            display: none;
+        }
+
+        .steps__text {
+            padding-top: var(--space-3);
+        }
+
+        /* Aligns the first line of a body-only step with the circle's center (Inquire.dc.html). */
+        .steps__text--solo {
+            padding-top: 14px;
+        }
+    }
+</style>

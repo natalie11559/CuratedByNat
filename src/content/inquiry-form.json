@@ -1,1 +1,138 @@
-{}
+{
+  "intro": "All fields are required unless marked optional.",
+  "optionalMarker": "(optional)",
+  "selectPlaceholder": "Choose one",
+  "fields": {
+    "firstName": {
+      "label": "First name",
+      "error": "Please add your first name."
+    },
+    "lastName": {
+      "label": "Last name",
+      "error": "Please add your last name."
+    },
+    "email": {
+      "label": "Email",
+      "error": "Please add your email.",
+      "formatError": "That email looks a little off. Try name@example.com."
+    },
+    "phone": {
+      "label": "Phone",
+      "error": "Please add a phone number.",
+      "formatError": "That number looks a little short. Please include your area code."
+    },
+    "instagram": {
+      "label": "Instagram handle",
+      "placeholder": "@yourhandle"
+    },
+    "inquirer": {
+      "label": "Who's inquiring?",
+      "options": [
+        "The bride or couple",
+        "Maid of honor or bridesmaid",
+        "Family member",
+        "Friend or host",
+        "Other"
+      ],
+      "error": "Please pick one."
+    },
+    "celebrating": {
+      "label": "What are you celebrating?",
+      "options": {
+        "wedding": {
+          "label": "Wedding",
+          "detail": ""
+        },
+        "bachelorette": {
+          "label": "Bachelorette weekend",
+          "detail": ""
+        },
+        "bridalEvent": {
+          "label": "Bridal event",
+          "detail": "Proposal, engagement shoot, shower, engagement party, rehearsal dinner"
+        },
+        "celebration": {
+          "label": "Celebration",
+          "detail": "Birthday, trip, milestone"
+        },
+        "notSure": {
+          "label": "Not sure yet",
+          "detail": ""
+        }
+      },
+      "error": "Pick at least one, even if it's Not sure yet."
+    },
+    "eventDate": {
+      "label": "Event date",
+      "error": "Please add a date, or check My date isn't set yet."
+    },
+    "dateNotSet": {
+      "label": "My date isn't set yet"
+    },
+    "endDate": {
+      "label": "End date (for weekends and multi-day events)",
+      "orderError": "That end date is before your event date. Please check it."
+    },
+    "inGeorgia": {
+      "label": "Is your event in Georgia?",
+      "options": {
+        "yes": "Yes",
+        "destination": "No, it's a destination event",
+        "notSure": "Not sure yet"
+      },
+      "destinationNote": "Love a destination! Share your location and I'll follow up with details.",
+      "error": "Please pick one."
+    },
+    "location": {
+      "label": "City and venue",
+      "placeholder": "City, venue name if you have one",
+      "error": "Please add a city, even if the venue isn't booked."
+    },
+    "photoVideo": {
+      "label": "Do you have a photographer or videographer booked?",
+      "options": [
+        "Photographer and videographer",
+        "Photographer only",
+        "Videographer only",
+        "Not yet",
+        "Not planning to"
+      ]
+    },
+    "excitedAbout": {
+      "label": "What part of the day are you most excited about?"
+    },
+    "anythingElse": {
+      "label": "Anything else I should know?"
+    },
+    "foundVia": {
+      "label": "How did you find me?",
+      "options": [
+        "Instagram",
+        "TikTok",
+        "Friend or family",
+        "Past client",
+        "Planner or vendor",
+        "Google",
+        "Other"
+      ]
+    }
+  },
+  "messages": {
+    "errorSummary": "Almost there! Please fill in the highlighted fields.",
+    "invalidDate": "That date looks a little off. Please pick it from the calendar.",
+    "invalidOption": "Please pick one of the choices.",
+    "tooLong": "That's a little long. Please shorten it.",
+    "sendFailure": "Oh no, your inquiry didn't send. Please try again in a moment, or message me on Instagram @curated.bynat.",
+    "noJavaScript": "This form needs JavaScript turned on to send, because it uses a quick spam check. Please turn it on and try again, or message me on Instagram @curated.bynat."
+  },
+  "submit": {
+    "label": "Send my inquiry",
+    "loadingLabel": "Sending the good news"
+  },
+  "success": {
+    "heading": "Yay, it's in!",
+    "body": "Thank you for reaching out. I'll be in touch with my availability and packages. In the meantime, come say hi on Instagram @curated.bynat.",
+    "buttonLabel": "Follow along",
+    "signature": "xo, Nat"
+  }
+}

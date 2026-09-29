@@ -1,0 +1,134 @@
+---
+import Button from '../components/Button.astro';
+import MotifIcon from '../components/MotifIcon.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { notFound } from '../lib/content';
+
+const motifs = ['coupe', 'bow', 'heart', 'heel'] as const;
+---
+
+<BaseLayout title={notFound.seo.title} description={notFound.seo.description} path="/404" noindex>
+    <section class="not-found bg-alt">
+        <div class="not-found__panel">
+            <div class="not-found__motifs" aria-hidden="true">
+                <span class="not-found__rule"></span>
+                <span class="not-found__icons">
+                    {
+                        motifs.map((name) => (
+                            <span class:list={['not-found__icon', `not-found__icon--${name}`]}>
+                                <MotifIcon name={name} />
+                            </span>
+                        ))
+                    }
+                </span>
+                <span class="not-found__rule"></span>
+            </div>
+            <p class="t-eyebrow">{notFound.eyebrow}</p>
+            <h1 class="t-h1-inquire">{notFound.headline}</h1>
+            <p class="not-found__body">{notFound.body}</p>
+            <div class="not-found__actions">
+                <Button label={notFound.homeButtonLabel} href="/" />
+                <Button label={notFound.inquireButtonLabel} href="/inquire" variant="outline" />
+            </div>
+        </div>
+    </section>
+</BaseLayout>
+
+<style>
+    /* A plain blush ground with one centered panel, like the Inquire hero without its pattern. */
+    .not-found {
+        min-height: calc(100svh - var(--header-height));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--section-pad-y) var(--gutter);
+    }
+
+    .not-found__panel {
+        width: 100%;
+        max-width: var(--measure-text);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-5);
+        padding: var(--space-12) var(--space-13);
+        background: var(--color-bg);
+        border: var(--border-hairline);
+        border-radius: var(--radius-sm);
+        text-align: center;
+    }
+
+    /* Motif Strip row (design-spec 6.8), sized to the panel. */
+    .not-found__motifs {
+        width: 100%;
+        margin-bottom: var(--space-2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-6);
+        color: var(--color-accent); /* decorative: motif icon stroke via currentColor */
+    }
+
+    .not-found__rule {
+        flex: 1;
+        max-width: 160px;
+        height: 1px;
+        background: var(--color-border);
+    }
+
+    .not-found__icons {
+        display: flex;
+        align-items: center;
+        gap: var(--space-5);
+    }
+
+    .not-found__icon {
+        display: flex;
+        transition: transform 240ms var(--ease-spring);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .not-found__icon--coupe:hover,
+        .not-found__icon--heel:hover {
+            transform: translateY(-3px) rotate(-8deg);
+        }
+
+        .not-found__icon--bow:hover {
+            transform: translateY(-3px) rotate(8deg);
+        }
+
+        .not-found__icon--heart:hover {
+            transform: translateY(-3px) scale(1.15);
+        }
+    }
+
+    .not-found__body {
+        max-width: 480px;
+        font-size: 18px;
+        line-height: 1.65;
+        color: var(--color-text);
+    }
+
+    .not-found__actions {
+        margin-top: var(--space-2);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--space-3);
+    }
+
+    @media (max-width: 767px) {
+        .not-found__panel {
+            padding: var(--space-9) var(--space-6);
+        }
+
+        .not-found__body {
+            font-size: 17px;
+        }
+
+        .not-found__actions {
+            width: 100%;
+            flex-direction: column;
+        }
+    }
+</style>

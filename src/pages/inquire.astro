@@ -1,0 +1,77 @@
+---
+// Inquire (design spec 9.4, Inquire.dc.html): pattern header, the form, What happens next. No CTA Band.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import InquiryForm from '../components/inquiry/InquiryForm.astro';
+import WhatHappensNext from '../components/inquiry/WhatHappensNext.astro';
+import { inquirePage } from '../lib/content';
+
+const { hero, seo } = inquirePage;
+---
+
+<BaseLayout title={seo.title} description={seo.description} path="/inquire" current="inquire">
+    <link slot="head" rel="preconnect" href="https://challenges.cloudflare.com" />
+
+    <section class="inquire-hero">
+        <div class="inquire-hero__panel">
+            <p class="t-eyebrow">{hero.eyebrow}</p>
+            <h1 class="t-h1-inquire" id="inquire-title">{hero.title}</h1>
+            <p class="inquire-hero__body">{hero.body}</p>
+            <p class="inquire-hero__note t-small-note">{hero.note}</p>
+        </div>
+    </section>
+
+    <InquiryForm labelledBy="inquire-title" />
+
+    <WhatHappensNext />
+</BaseLayout>
+
+<style>
+    /* Blush ground with the 120px motif tile (coupe, bow, heart, heel) from Inquire.dc.html. */
+    .inquire-hero {
+        padding: var(--space-13) var(--gutter);
+        background-color: var(--color-bg-alt);
+        background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22120%22%20height%3D%22120%22%20viewBox%3D%220%200%20120%20120%22%3E%3Cg%20transform%3D%22translate(14%2014)%22%20fill%3D%22none%22%20stroke%3D%22%23D48A95%22%20stroke-width%3D%221.2%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20opacity%3D%22.5%22%3E%3Cpath%20d%3D%22M4.5%205h15c0%204.2-3.4%206.5-7.5%206.5S4.5%209.2%204.5%205z%22%2F%3E%3Cpath%20d%3D%22M12%2011.5V19%22%2F%3E%3Cpath%20d%3D%22M8%2019.5h8%22%2F%3E%3C%2Fg%3E%3Cg%20transform%3D%22translate(76%2020)%22%20fill%3D%22none%22%20stroke%3D%22%23D48A95%22%20stroke-width%3D%221.2%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20opacity%3D%22.5%22%3E%3Cpath%20d%3D%22M12%2010.5C10%207.5%205%205.5%203.5%207.5S4.5%2014%208%2013l4-2.5z%22%2F%3E%3Cpath%20d%3D%22M12%2010.5c2-3%207-5%208.5-3S19.5%2014%2016%2013l-4-2.5z%22%2F%3E%3Cpath%20d%3D%22M11%2011.5l-2.5%207.5%22%2F%3E%3Cpath%20d%3D%22M13%2011.5l2.5%207.5%22%2F%3E%3C%2Fg%3E%3Cg%20transform%3D%22translate(20%2076)%22%20fill%3D%22none%22%20stroke%3D%22%23D48A95%22%20stroke-width%3D%221.2%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20opacity%3D%22.5%22%3E%3Cpath%20d%3D%22M12%2019.5s-7.5-4.6-7.5-10.2A4.2%204.2%200%200%201%2012%206.8a4.2%204.2%200%200%201%207.5%202.5c0%205.6-7.5%2010.2-7.5%2010.2z%22%2F%3E%3C%2Fg%3E%3Cg%20transform%3D%22translate(78%2078)%22%20fill%3D%22none%22%20stroke%3D%22%23D48A95%22%20stroke-width%3D%221.2%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20opacity%3D%22.5%22%3E%3Cpath%20d%3D%22M3%2018.5h9.5l3.5-6c1-1.6%202.3-2.5%204-2.5V6.5h-2c-2.3%200-3.6%201.3-5%203.5l-2%203c-1%201.5-2.5%202.2-4.3%202.2C4.5%2015.2%203%2016.5%203%2018.5z%22%2F%3E%3Cpath%20d%3D%22M20%2010v8.5%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+        background-size: 120px 120px;
+    }
+
+    .inquire-hero__panel {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: var(--space-12) var(--space-13);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-5);
+        text-align: center;
+        background: var(--color-bg);
+        border: var(--border-hairline);
+        border-radius: var(--radius-sm);
+    }
+
+    .inquire-hero__body {
+        max-width: 560px;
+        font-size: 18px;
+        line-height: 1.65;
+        color: var(--color-text);
+    }
+
+    .inquire-hero__note {
+        max-width: 520px;
+        padding-top: var(--space-5);
+        border-top: var(--border-hairline);
+    }
+
+    @media (max-width: 767px) {
+        .inquire-hero {
+            padding: var(--space-8) var(--space-4);
+        }
+
+        .inquire-hero__panel {
+            padding: var(--space-9) var(--space-6);
+        }
+
+        .inquire-hero__body {
+            font-size: 17px;
+        }
+    }
+</style>

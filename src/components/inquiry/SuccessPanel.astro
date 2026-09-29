@@ -1,0 +1,149 @@
+---
+// Design spec 6.13: shown in place of the inquiry form once it is sent, and on /inquire/thanks.
+import Button from '../Button.astro';
+import MotifIcon from '../MotifIcon.astro';
+import { inquiryForm, site } from '../../lib/content';
+
+interface Props {
+    /** 2 inside the Inquire page (its H1 is the hero); 1 on the thank-you page. */
+    headingLevel?: 1 | 2;
+    /** Rendered hidden, for the form script to reveal. */
+    hidden?: boolean;
+    id?: string;
+}
+
+const { headingLevel = 2, hidden = false, id } = Astro.props;
+const { heading, body, buttonLabel, signature } = inquiryForm.success;
+const Heading = headingLevel === 1 ? 'h1' : 'h2';
+const icons = ['coupe', 'heart', 'coupe'] as const;
+---
+
+<div class="success" role="status" id={id} hidden={hidden} data-success-panel>
+    <div class="success__icons" aria-hidden="true">
+        {
+            icons.map((name, index) => (
+                <span class="success__icon" style={`--icon-index: ${index}`}>
+                    <MotifIcon name={name} size={22} />
+                </span>
+            ))
+        }
+    </div>
+    <Heading class="success__heading t-h2" tabindex="-1" data-success-heading>{heading}</Heading>
+    <p class="success__body">{body}</p>
+    <div class="success__action">
+        <Button label={buttonLabel} href={site.social.instagramUrl} external />
+    </div>
+    <p class="success__signature t-script">{signature}</p>
+</div>
+
+<style>
+    .success {
+        max-width: 640px;
+        margin: 0 auto;
+        border: var(--border-hairline);
+        border-radius: var(--radius-sm);
+        padding: var(--space-13) var(--space-12);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-5);
+        text-align: center;
+    }
+
+    .success[hidden] {
+        display: none;
+    }
+
+    .success__icons {
+        display: flex;
+        gap: 18px;
+        color: var(--color-accent);
+    }
+
+    .success__icon {
+        display: block;
+    }
+
+    .success__heading:focus {
+        outline: none;
+    }
+
+    .success__heading:focus-visible {
+        outline: 2px solid var(--color-accent-text);
+        outline-offset: 6px;
+    }
+
+    .success__body {
+        max-width: 480px;
+        font-size: 18px;
+        line-height: 1.65;
+        color: var(--color-text);
+    }
+
+    .success__action {
+        margin-top: var(--space-2);
+    }
+
+    .success__signature {
+        margin-top: var(--space-2);
+        font-size: 56px;
+        line-height: 1;
+    }
+
+    /* Form submit to success (design spec 7): fade up 12px, then the icons pop in turn. */
+    .success.is-entering {
+        animation: success-enter 400ms var(--ease-out) both;
+    }
+
+    .success.is-entering .success__icon {
+        animation: success-icon-pop 400ms var(--ease-spring) both;
+        animation-delay: calc(var(--icon-index) * 80ms);
+    }
+
+    @keyframes success-enter {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+
+    @keyframes success-icon-pop {
+        from {
+            opacity: 0;
+            transform: scale(0.6);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .success.is-entering,
+        .success.is-entering .success__icon {
+            animation: none;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .success {
+            padding: var(--space-10) var(--space-6);
+        }
+
+        .success__body {
+            font-size: 17px;
+        }
+
+        .success__action {
+            width: 100%;
+        }
+
+        .success__signature {
+            font-size: 44px;
+        }
+    }
+</style>

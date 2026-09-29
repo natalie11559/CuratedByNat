@@ -1,0 +1,179 @@
+---
+// Design-spec 6.5 and the Home services section in `Home.dc.html`: four linked cards, one per
+// service. The page supplies the section heading and the "View services" button.
+import Photo from './Photo.astro';
+import { serviceAnchors, services } from '../lib/content';
+
+interface Props {
+    class?: string;
+    [attribute: `data-${string}`]: unknown;
+}
+
+const { class: className, ...attributes } = Astro.props;
+
+// Card photo width: a quarter of the 1200px container less 48px padding (desktop), half the
+// container on tablets, half the screen on phones.
+const cardSizes =
+    '(min-width: 1280px) 252px, (min-width: 1024px) calc((100vw - 80px) / 4 - 48px), (min-width: 768px) calc((100vw - 64px) / 2 - 48px), calc(50vw - 28px)';
+---
+
+<ul class:list={['service-cards', className]} role="list" {...attributes}>
+    {
+        services.items.map((service, index) => {
+            const anchor = serviceAnchors[index];
+            const titleId = `service-card-${anchor}-title`;
+            const textId = `service-card-${anchor}-text`;
+            return (
+                <li class="service-cards__item">
+                    <a
+                        class="service-card"
+                        href={`/services#${anchor}`}
+                        aria-labelledby={titleId}
+                        aria-describedby={textId}
+                    >
+                        <span class="service-card__media">
+                            <Photo
+                                src={service.cardPhoto.image}
+                                alt={service.cardPhoto.alt}
+                                focusVertical={service.cardPhoto.focusVertical}
+                                focusHorizontal={service.cardPhoto.focusHorizontal}
+                                widths={[300, 400, 600, 800]}
+                                sizes={cardSizes}
+                            />
+                        </span>
+                        <h3 class="service-card__title" id={titleId}>
+                            {service.name}
+                        </h3>
+                        <p class="service-card__text" id={textId}>
+                            {service.cardText}
+                        </p>
+                    </a>
+                </li>
+            );
+        })
+    }
+</ul>
+
+<style>
+    .service-cards {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        row-gap: 40px;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    /* Every card keeps a 1px left border (transparent on the first) so all photos match in width. */
+    .service-cards__item {
+        display: flex;
+        border-left: 1px solid transparent;
+    }
+
+    .service-cards__item + .service-cards__item {
+        border-left-color: var(--color-border);
+    }
+
+    .service-card {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        padding: 0 24px;
+        color: var(--color-text);
+        text-align: center;
+        text-decoration: none;
+    }
+
+    .service-card:hover {
+        color: var(--color-text);
+    }
+
+    .service-card:focus-visible {
+        outline-offset: 4px;
+    }
+
+    .service-card__media {
+        display: block;
+        width: 100%;
+        aspect-ratio: 3 / 2;
+        overflow: hidden;
+        border-radius: var(--radius-sm);
+    }
+
+    .service-card__media :global(picture) {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    .service-card__media :global(img) {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 700ms var(--ease-out);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .service-card:hover .service-card__media :global(img) {
+            transform: scale(1.04);
+        }
+    }
+
+    .service-card__title {
+        font-family: var(--font-body);
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.45;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        text-wrap: wrap;
+        color: var(--color-text);
+        transition: color 200ms var(--ease-out);
+    }
+
+    .service-card:hover .service-card__title {
+        color: var(--color-accent-text);
+    }
+
+    .service-card__text {
+        max-width: 220px;
+        font-size: 15px;
+        line-height: 1.6;
+        color: var(--color-text-muted);
+    }
+
+    @media (max-width: 1023px) {
+        .service-cards {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .service-cards__item + .service-cards__item:nth-child(odd) {
+            border-left-color: transparent;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .service-cards__item + .service-cards__item {
+            border-left-color: transparent;
+        }
+
+        .service-cards__item:nth-child(odd) .service-card {
+            padding: 0 8px 0 0;
+        }
+
+        .service-cards__item:nth-child(even) .service-card {
+            padding: 0 0 0 8px;
+        }
+
+        .service-card__title {
+            font-size: 12px;
+        }
+
+        .service-card__text {
+            font-size: 14px;
+        }
+    }
+</style>

@@ -1,0 +1,322 @@
+---
+// Home page, design-spec 9.1 and `Home.dc.html`. The layout is fixed; every word and photo comes
+// from the "home", "instagram", "services" and "site" singletons.
+import Button from '../components/Button.astro';
+import CtaBand from '../components/CtaBand.astro';
+import MotifStrip from '../components/MotifStrip.astro';
+import Photo from '../components/Photo.astro';
+import PhotoGrid from '../components/PhotoGrid.astro';
+import ServiceCardGrid from '../components/ServiceCardGrid.astro';
+import TextImageSection from '../components/TextImageSection.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { home, instagram, site } from '../lib/content';
+import { focusToObjectPosition } from '../lib/images';
+
+const { hero, intro, capturing, servicesSection, closing } = home;
+
+// The hero keeps separate crops for computers and phones (design-spec 11). Photo sets
+// object-position inline, so it reads a custom property that the stylesheet switches at 768px.
+const desktopHeroPosition = focusToObjectPosition(hero.photo.focusVertical, hero.photo.focusHorizontal);
+// Tablets keep the 640px height on a narrower block, so a taller slice of the photo shows and the
+// frame starts higher up. Holding it at the middle or lower keeps the top edge off the bride's face.
+const [desktopHeroX, desktopHeroY] = desktopHeroPosition.split(' ');
+const tabletHeroPosition = `${desktopHeroX} ${Math.max(parseFloat(desktopHeroY), 50)}%`;
+const heroPositions = [
+    `--hero-position: ${desktopHeroPosition}`,
+    `--hero-position-tablet: ${tabletHeroPosition}`,
+    `--hero-position-phone: ${focusToObjectPosition(hero.phoneFocus.focusVertical, hero.phoneFocus.focusHorizontal)}`,
+].join('; ');
+
+// The 3:4 photo covers the inset block: 32px narrower than the screen from 768px up, 24px on
+// phones, and never narrower than 420px (the 560px-tall phone block times 3/4).
+const heroSizes = '(min-width: 768px) calc(100vw - 32px), (min-width: 444px) calc(100vw - 24px), 420px';
+---
+
+<BaseLayout title={home.seo.title} description={home.seo.description} path="/" current="home">
+    <section class="hero">
+        <div class="hero__block" style={heroPositions}>
+            <Photo
+                src={hero.photo.image}
+                alt={hero.photo.alt}
+                objectPosition="var(--hero-object-position)"
+                widths={[400, 800, 1200, 1600, 2400]}
+                sizes={heroSizes}
+                priority
+                class="hero__image"
+                pictureClass="hero__picture"
+            />
+            <div class="hero__shade" aria-hidden="true"></div>
+            <div class="hero__content">
+                <p class="hero__eyebrow t-eyebrow">{hero.eyebrow}</p>
+                <h1 class="hero__title t-display">
+                    {hero.titleStart}{' '}<br /><span class="hero__script">{hero.titleScript}</span><span class="hero__gap">{' '}</span>{hero.titleEnd}
+                </h1>
+                <div class="hero__button">
+                    <Button label={hero.buttonLabel} href="/inquire" variant="photo" />
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <TextImageSection
+        class="home-intro"
+        eyebrow={intro.eyebrow}
+        title={intro.title}
+        paragraphs={intro.paragraphs}
+        buttonLabel={intro.buttonLabel}
+        buttonHref="/about"
+        photo={intro.photo}
+        ratio="4 / 5"
+        imageSide="left"
+        bg="alt"
+        frame
+    />
+
+    <TextImageSection
+        eyebrow={capturing.eyebrow}
+        title={capturing.title}
+        paragraphs={capturing.paragraphs}
+        buttonLabel={capturing.buttonLabel}
+        buttonHref="/services#how-it-works"
+        photo={capturing.photo}
+        layout="bleed"
+        imageSide="right"
+        ratio="3 / 2"
+        bg="base"
+    />
+
+    <section class="home-services bg-alt">
+        <div class="home-services__inner reveal">
+            <div class="home-services__heading">
+                <p class="t-eyebrow">{servicesSection.eyebrow}</p>
+                <h2 class="t-h2">{servicesSection.title}</h2>
+            </div>
+            <ServiceCardGrid />
+            <div class="home-services__button">
+                <Button label={servicesSection.buttonLabel} href="/services" />
+            </div>
+        </div>
+    </section>
+
+    <MotifStrip bg="base" />
+
+    <PhotoGrid
+        class="reveal"
+        eyebrow={instagram.eyebrow}
+        title={instagram.title}
+        body={instagram.body}
+        buttonLabel={instagram.buttonLabel}
+        buttonHref={site.social.instagramUrl}
+        handle={site.social.instagramHandle}
+        tiles={instagram.tiles}
+        tileHref={site.social.instagramUrl}
+    />
+
+    <CtaBand
+        class="reveal"
+        variant="photo"
+        eyebrow={closing.eyebrow}
+        title={closing.title}
+        buttonLabel={closing.buttonLabel}
+        buttonHref="/inquire"
+        outerBg="base"
+    />
+</BaseLayout>
+
+<style>
+    /* Hero: inset photo block (design-spec 9.1). The intro's top margin makes the 16px gap below. */
+    .hero {
+        padding: 0 16px;
+    }
+
+    .hero__block {
+        --hero-object-position: var(--hero-position);
+        position: relative;
+        overflow: hidden;
+        height: 640px;
+        border-radius: var(--radius-lg);
+        /* Shown only while the photo loads; dark enough for the white text. */
+        background: #8a8782;
+    }
+
+    .hero__block :global(.hero__picture) {
+        position: absolute;
+        inset: 0;
+        display: block;
+    }
+
+    .hero__block :global(.hero__image) {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* The spec overlay, plus a soft extra shade behind the text block so the small eyebrow
+       reaches 4.5:1 (and the headline 3:1) even over the white lace. */
+    .hero__shade {
+        --hero-text-shade: rgba(43, 43, 43, 0.4);
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(ellipse 34% 44% at 50% 50%, var(--hero-text-shade) 0%, var(--hero-text-shade) 55%, rgba(43, 43, 43, 0) 100%),
+            var(--overlay-hero);
+    }
+
+    .hero__content {
+        position: relative;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        padding: 0 40px;
+        text-align: center;
+    }
+
+    .hero__eyebrow {
+        color: var(--color-on-dark);
+    }
+
+    .hero__title {
+        color: var(--color-on-photo);
+    }
+
+    /* The handwritten word inside the H1 (design-spec 2 and 3): never uppercase. */
+    .hero__script {
+        margin-right: 0.12em;
+        font-family: var(--font-script);
+        font-size: 106px;
+        line-height: 0.5;
+        letter-spacing: 0;
+        text-transform: none;
+        vertical-align: -0.04em;
+        color: var(--color-hero-script);
+    }
+
+    /* A real space for screen readers and search ("by Nat"); the margin above sets the visual gap. */
+    .hero__gap {
+        font-size: 0;
+    }
+
+    .hero__button {
+        margin-top: 20px;
+    }
+
+    /* Load animation (design-spec 7): eyebrow, headline and button fade up, 80ms apart. */
+    @media (prefers-reduced-motion: no-preference) {
+        .hero__eyebrow,
+        .hero__title,
+        .hero__button {
+            animation: hero-fade-up 800ms var(--ease-out) both;
+        }
+
+        .hero__title {
+            animation-delay: 80ms;
+        }
+
+        .hero__button {
+            animation-delay: 160ms;
+        }
+    }
+
+    @keyframes hero-fade-up {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+
+    .home-intro {
+        margin-top: 16px;
+    }
+
+    /* Services: heading, the four cards, then the button (Home.dc.html). */
+    .home-services {
+        padding: var(--section-pad-y) var(--gutter);
+    }
+
+    .home-services__inner {
+        max-width: var(--container-max);
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 56px;
+    }
+
+    .home-services__heading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        text-align: center;
+    }
+
+    @media (max-width: 1023px) {
+        /* Tablet keeps the desktop layout with the display headline at 72px (design-spec 4). */
+        .hero__script {
+            font-size: 80px;
+        }
+
+        .hero__shade {
+            background:
+                radial-gradient(ellipse 46% 44% at 50% 50%, var(--hero-text-shade) 0%, var(--hero-text-shade) 55%, rgba(43, 43, 43, 0) 100%),
+                var(--overlay-hero);
+        }
+    }
+
+    @media (min-width: 768px) and (max-width: 1023px) {
+        .hero__block {
+            --hero-object-position: var(--hero-position-tablet);
+        }
+    }
+
+    @media (max-width: 767px) {
+        .hero {
+            padding: 0 12px;
+        }
+
+        .hero__block {
+            --hero-object-position: var(--hero-position-phone);
+            height: 560px;
+        }
+
+        .hero__shade {
+            --hero-text-shade: rgba(43, 43, 43, 0.32);
+            background:
+                radial-gradient(ellipse 80% 38% at 50% 50%, var(--hero-text-shade) 0%, var(--hero-text-shade) 55%, rgba(43, 43, 43, 0) 100%),
+                var(--overlay-hero);
+        }
+
+        .hero__content {
+            padding: 32px 24px;
+        }
+
+        .hero__script {
+            font-size: 58px;
+        }
+
+        .hero__button {
+            width: 100%;
+            margin-top: 12px;
+        }
+
+        .home-intro {
+            margin-top: 12px;
+        }
+
+        .home-services__inner {
+            gap: 40px;
+        }
+
+        .home-services__button {
+            width: 100%;
+        }
+    }
+</style>

@@ -1,0 +1,47 @@
+---
+// The About page's two testimonial cards (`About.dc.html`): a 5fr / 7fr grid on desktop,
+// stacked on phones.
+import Testimonial from './Testimonial.astro';
+
+interface Props {
+    testimonials: readonly { quote: string; name: string }[];
+    readMoreLabel?: string;
+    readLessLabel?: string;
+    class?: string;
+    [attribute: `data-${string}`]: unknown;
+}
+
+const { testimonials, readMoreLabel, readLessLabel, class: className, ...attributes } = Astro.props;
+---
+
+<div class:list={['testimonial-pair', className]} {...attributes}>
+    {
+        testimonials.map((testimonial, index) => (
+            <Testimonial
+                quote={testimonial.quote}
+                name={testimonial.name}
+                variant="card"
+                readMoreLabel={readMoreLabel}
+                readLessLabel={readLessLabel}
+                id={`testimonial-${index + 1}`}
+            />
+        ))
+    }
+</div>
+
+<style>
+    .testimonial-pair {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        gap: 32px;
+        align-items: start;
+        width: 100%;
+    }
+
+    @media (max-width: 767px) {
+        .testimonial-pair {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 20px;
+        }
+    }
+</style>

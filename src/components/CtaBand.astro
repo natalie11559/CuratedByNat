@@ -1,0 +1,370 @@
+---
+// Design-spec 6.7 and `CTA Band.dc.html`. The photo variant runs the closing slideshow from
+// the site settings (`site.closingPhotos`) behind a dark overlay; the blush variant sits on
+// blush with a rose ring behind the text.
+import Button from './Button.astro';
+import Photo from './Photo.astro';
+import { site } from '../lib/content';
+
+interface Props {
+    variant?: 'photo' | 'blush';
+    eyebrow?: string;
+    title: string;
+    body?: string;
+    buttonLabel: string;
+    buttonHref: string;
+    /** Background around the inset photo block, to match the section above. */
+    outerBg?: 'base' | 'alt';
+    class?: string;
+    [attribute: `data-${string}`]: unknown;
+}
+
+const {
+    variant = 'photo',
+    eyebrow,
+    title,
+    body,
+    buttonLabel,
+    buttonHref,
+    outerBg = 'base',
+    class: className,
+    ...attributes
+} = Astro.props;
+
+const isPhoto = variant === 'photo';
+const slideshowPhotos = isPhoto ? site.closingPhotos.filter((photo) => Boolean(photo.image)) : [];
+const secondsPerPhoto = 6;
+
+// Each tile is a quarter of the band (half on phones), and the band is at least 420px (440px)
+// tall, so portrait photos are usually sized by the band height: about 320px wide is enough.
+const tileSizes = '(min-width: 1312px) calc((100vw - 32px) / 4), (min-width: 768px) 320px, 240px';
+---
+
+<section
+    class:list={['cta-band', `cta-band--${variant}`, isPhoto && (outerBg === 'alt' ? 'bg-alt' : 'bg-base'), className]}
+    {...attributes}
+>
+    <div
+        class="cta-band__inner"
+        style={isPhoto ? `--photo-count: ${slideshowPhotos.length}; --slideshow-duration: ${slideshowPhotos.length * secondsPerPhoto}s;` : undefined}
+        data-cta-slideshow={isPhoto ? '' : undefined}
+    >
+        {
+            isPhoto && (
+                <>
+                    <div class="cta-band__slideshow" aria-hidden="true">
+                        <div class="cta-band__track">
+                            {[...slideshowPhotos, ...slideshowPhotos].map((photo) => (
+                                <Photo
+                                    src={photo.image}
+                                    decorative
+                                    widths={[360, 480, 720, 960, 1200]}
+                                    sizes={tileSizes}
+                                    pictureClass="cta-band__tile"
+                                />
+                            ))}
+                        </div>
+                    </div>
+                    <div class="cta-band__overlay" aria-hidden="true" />
+                    <div class="cta-band__shade" aria-hidden="true" />
+                </>
+            )
+        }
+        {!isPhoto && <span class="cta-band__ring" aria-hidden="true" />}
+
+        <div class="cta-band__content">
+            {eyebrow && <p class="cta-band__eyebrow t-eyebrow">{eyebrow}</p>}
+            <h2 class="cta-band__title t-h2-cta">{title}</h2>
+            {body && <p class="cta-band__body">{body}</p>}
+            <div class="cta-band__button">
+                <Button label={buttonLabel} href={buttonHref} variant={isPhoto ? 'photo' : 'primary'} />
+            </div>
+        </div>
+
+        {/* WCAG 2.2.2: a way to stop the moving background. Hidden until the script runs,
+            and whenever reduced motion already stops the slideshow. */}
+        {
+            isPhoto && (
+                <button
+                    type="button"
+                    class="cta-band__toggle"
+                    data-cta-toggle
+                    data-state="playing"
+                    aria-label="Pause slideshow"
+                    hidden
+                >
+                    <svg class="cta-band__toggle-icon cta-band__toggle-icon--pause" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                        <rect x="14" y="4" width="4" height="16" rx="1" />
+                        <rect x="6" y="4" width="4" height="16" rx="1" />
+                    </svg>
+                    <svg class="cta-band__toggle-icon cta-band__toggle-icon--play" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                        <polygon points="6 3 20 12 6 21 6 3" />
+                    </svg>
+                </button>
+            )
+        }
+    </div>
+</section>
+
+<script>
+    // The slideshow stops while the tab is hidden or after a visitor presses pause; either one
+    // keeps it stopped. Reduced motion is handled in CSS, and the pause button is hidden then.
+    const slideshows = document.querySelectorAll<HTMLElement>('[data-cta-slideshow]');
+    if (slideshows.length > 0) {
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+        const updatePlayState = () => {
+            slideshows.forEach((slideshow) => {
+                const pausedByVisitor = slideshow.dataset.pausedByVisitor === 'true';
+                slideshow.classList.toggle('is-paused', document.hidden || pausedByVisitor);
+            });
+        };
+
+        const updateToggleVisibility = () => {
+            slideshows.forEach((slideshow) => {
+                const toggle = slideshow.querySelector<HTMLButtonElement>('[data-cta-toggle]');
+                if (toggle) {
+                    toggle.hidden = reducedMotion.matches;
+                }
+            });
+        };
+
+        slideshows.forEach((slideshow) => {
+            const toggle = slideshow.querySelector<HTMLButtonElement>('[data-cta-toggle]');
+            toggle?.addEventListener('click', () => {
+                const paused = slideshow.dataset.pausedByVisitor !== 'true';
+                slideshow.dataset.pausedByVisitor = String(paused);
+                toggle.dataset.state = paused ? 'paused' : 'playing';
+                toggle.setAttribute('aria-label', paused ? 'Play slideshow' : 'Pause slideshow');
+                updatePlayState();
+            });
+        });
+
+        updatePlayState();
+        updateToggleVisibility();
+        document.addEventListener('visibilitychange', updatePlayState);
+        reducedMotion.addEventListener('change', updateToggleVisibility);
+    }
+</script>
+
+<style>
+    .cta-band--photo {
+        padding: 0 16px 16px;
+    }
+
+    .cta-band__inner {
+        position: relative;
+        overflow: hidden;
+        min-height: 420px;
+        padding: 96px 40px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .cta-band--photo .cta-band__inner {
+        border-radius: var(--radius-lg);
+        background: var(--color-text);
+    }
+
+    .cta-band--blush .cta-band__inner {
+        background: var(--color-bg-alt);
+    }
+
+    .cta-band__slideshow {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+    }
+
+    /* Two copies of the photo list side by side; sliding by half the track loops seamlessly. */
+    .cta-band__track {
+        --photos-per-view: 4;
+        display: flex;
+        height: 100%;
+        width: calc(var(--photo-count) * 2 / var(--photos-per-view) * 100%);
+    }
+
+    /* Moves only when JavaScript can show the pause button (WCAG 2.2.2) and motion is welcome. */
+    @media (prefers-reduced-motion: no-preference) {
+        :global(.js) .cta-band__track {
+            animation: cta-band-slide var(--slideshow-duration) linear infinite;
+            will-change: transform;
+        }
+    }
+
+    .cta-band__track :global(.cta-band__tile) {
+        display: block;
+        flex: 0 0 calc(100% / (var(--photo-count) * 2));
+        height: 100%;
+    }
+
+    .cta-band__track :global(img) {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .cta-band__inner.is-paused .cta-band__track {
+        animation-play-state: paused;
+    }
+
+    @keyframes cta-band-slide {
+        from {
+            transform: translateX(0);
+        }
+
+        to {
+            transform: translateX(-50%);
+        }
+    }
+
+    .cta-band__overlay {
+        position: absolute;
+        inset: 0;
+        background: var(--overlay-photo);
+    }
+
+    /* The spec's 0.6 overlay leaves the small eyebrow and body text at about 3.6:1 over light photos.
+       This extra shade behind the text lifts it past 4.5:1 while the edges keep the spec's look. */
+    .cta-band__shade {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+            ellipse 60% 80% at 50% 50%,
+            rgba(43, 43, 43, 0.28) 0%,
+            rgba(43, 43, 43, 0.28) 60%,
+            rgba(43, 43, 43, 0) 100%
+        );
+    }
+
+    /* Pause/play: 44px tap area in the bottom-right corner, quiet on the dark overlay. */
+    .cta-band__toggle {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        border: 1px solid transparent;
+        border-radius: var(--radius-xs);
+        background: rgba(43, 43, 43, 0.4);
+        color: var(--color-on-dark);
+        transition:
+            background-color 200ms var(--ease-out),
+            border-color 200ms var(--ease-out);
+    }
+
+    .cta-band__toggle[hidden] {
+        display: none;
+    }
+
+    .cta-band__toggle:hover {
+        background: rgba(43, 43, 43, 0.6);
+        border-color: rgba(248, 244, 238, 0.6);
+    }
+
+    .cta-band__toggle:active {
+        background: rgba(43, 43, 43, 0.75);
+    }
+
+    /* The rose focus ring is too dark on the photo overlay, so this one is light. */
+    .cta-band__toggle:focus-visible {
+        outline: 2px solid var(--color-on-dark);
+        outline-offset: 2px;
+    }
+
+    .cta-band__toggle[data-state='playing'] .cta-band__toggle-icon--play,
+    .cta-band__toggle[data-state='paused'] .cta-band__toggle-icon--pause {
+        display: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .cta-band__toggle {
+            display: none;
+        }
+    }
+
+    .cta-band__ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 380px;
+        height: 380px;
+        transform: translate(-50%, -50%);
+        border: var(--border-accent);
+        border-radius: var(--radius-full);
+        opacity: 0.55;
+    }
+
+    .cta-band__content {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        width: 100%;
+    }
+
+    .cta-band__title {
+        max-width: 760px;
+        color: var(--color-text);
+    }
+
+    .cta-band__body {
+        max-width: 520px;
+        font-size: 18px;
+        line-height: 1.6;
+        color: var(--color-text-muted);
+    }
+
+    .cta-band--photo .cta-band__eyebrow,
+    .cta-band--photo .cta-band__body {
+        color: var(--color-on-dark);
+    }
+
+    .cta-band--photo .cta-band__title {
+        color: var(--color-on-photo);
+    }
+
+    .cta-band__button {
+        margin-top: 12px;
+    }
+
+    @media (max-width: 767px) {
+        .cta-band--photo {
+            padding: 0 12px 12px;
+        }
+
+        .cta-band__inner {
+            min-height: 440px;
+            padding: 64px 24px;
+        }
+
+        .cta-band__track {
+            --photos-per-view: 2;
+        }
+
+        .cta-band__shade {
+            background: rgba(43, 43, 43, 0.28);
+        }
+
+        .cta-band__ring {
+            width: 300px;
+            height: 300px;
+        }
+
+        .cta-band__body {
+            font-size: 16px;
+        }
+
+        .cta-band__button {
+            width: 100%;
+        }
+    }
+</style>

@@ -9,7 +9,10 @@
     "preview": "astro build && wrangler dev",
     "check": "astro check",
     "deploy": "astro build && wrangler deploy",
-    "dev:cms": "PUBLIC_KEYSTATIC_STORAGE=local astro dev"
+    "dev:cms": "PUBLIC_KEYSTATIC_STORAGE=local astro dev",
+    "check:contrast": "node scripts/check-contrast.mjs",
+    "test:unit": "node --experimental-strip-types --test 'tests/unit/**/*.test.ts'",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@astrojs/cloudflare": "14.3.3",

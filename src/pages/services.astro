@@ -1,0 +1,153 @@
+---
+// Services (design spec 9.3, Services.dc.html). The hero and the sections after the four
+// services come from the "Services page" singleton; the four service sections come from
+// "The four services", the same list that feeds the Home cards.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CtaBand from '../components/CtaBand.astro';
+import ExtrasList from '../components/ExtrasList.astro';
+import FeatureColumns from '../components/FeatureColumns.astro';
+import MotifStrip from '../components/MotifStrip.astro';
+import Steps from '../components/Steps.astro';
+import Testimonial from '../components/Testimonial.astro';
+import TextImageSection from '../components/TextImageSection.astro';
+import { serviceAnchors, services, servicesPage } from '../lib/content';
+
+const { seo, hero, extras, howItWorks, testimonial, goodToKnow, closing } = servicesPage;
+---
+
+<BaseLayout title={seo.title} description={seo.description} path="/services" current="services">
+    <TextImageSection headingLevel={1} bg="alt" eyebrow={hero.eyebrow} title={hero.title} paragraphs={[hero.body]} />
+
+    {
+        services.items.map((service, index) => {
+            // Alternates as designed: photo left on base, then photo right on blush.
+            const isEven = index % 2 === 0;
+            return (
+                <TextImageSection
+                    priority={index === 0}
+                    anchor={serviceAnchors[index]}
+                    eyebrow={service.name}
+                    title={service.title}
+                    paragraphs={[service.description]}
+                    listTitle={services.listTitle}
+                    list={service.receives}
+                    buttonLabel={service.buttonLabel}
+                    buttonHref="/inquire"
+                    photo={service.sectionPhoto}
+                    ratio="4 / 5"
+                    imageSide={isEven ? 'left' : 'right'}
+                    bg={isEven ? 'base' : 'alt'}
+                />
+            );
+        })
+    }
+
+    <MotifStrip bg="base" />
+
+    <section class="services-extras bg-base" aria-labelledby="extras-title">
+        <div class="services-extras__inner reveal">
+            <h2 class="t-h2" id="extras-title">{extras.title}</h2>
+            <p class="services-extras__body t-body">{extras.body}</p>
+            <ExtrasList items={extras.items} />
+        </div>
+    </section>
+
+    <section class="how-it-works bg-alt" id="how-it-works" aria-labelledby="how-it-works-title">
+        <div class="how-it-works__inner reveal">
+            <h2 class="how-it-works__title t-h2" id="how-it-works-title">{howItWorks.title}</h2>
+            <Steps steps={howItWorks.steps} bg="alt" />
+        </div>
+    </section>
+
+    <section class="services-quote bg-base">
+        <div class="reveal">
+            <Testimonial variant="feature" quote={testimonial.quote} name={testimonial.name} />
+        </div>
+    </section>
+
+    <section class="good-to-know bg-base" aria-labelledby="good-to-know-title">
+        <div class="good-to-know__inner reveal">
+            <h2 class="good-to-know__label t-eyebrow" id="good-to-know-title">{goodToKnow.label}</h2>
+            <FeatureColumns items={goodToKnow.items.map((body) => ({ body }))} variant="plain" />
+        </div>
+    </section>
+
+    <CtaBand variant="photo" title={closing.title} body={closing.body} buttonLabel={closing.buttonLabel} buttonHref="/inquire" />
+</BaseLayout>
+
+<style>
+    /* Extras: sits right under the Motif Strip, so only 8px on top (Services.dc.html). */
+    .services-extras {
+        padding: var(--space-2) var(--gutter) var(--section-pad-y);
+    }
+
+    .services-extras__inner {
+        max-width: 880px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-5);
+        text-align: center;
+    }
+
+    .services-extras__body {
+        max-width: var(--measure-beside-image);
+    }
+
+    /* 16px on top of the 20px stack gap, as designed. */
+    .services-extras__inner :global(.extras) {
+        margin-top: var(--space-4);
+    }
+
+    .how-it-works {
+        padding: var(--section-pad-y) var(--gutter);
+    }
+
+    .how-it-works__inner {
+        max-width: var(--container-max);
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-12);
+    }
+
+    .how-it-works__title {
+        text-align: center;
+    }
+
+    .services-quote {
+        padding: var(--section-pad-y) var(--gutter);
+    }
+
+    /* Good to know: no top padding; a hairline separates it from the quote above. */
+    .good-to-know {
+        padding: 0 var(--gutter) var(--section-pad-y);
+    }
+
+    .good-to-know__inner {
+        max-width: var(--container-max);
+        margin: 0 auto;
+        padding-top: var(--space-12);
+        border-top: var(--border-hairline);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-8);
+    }
+
+    .good-to-know__label {
+        text-align: center;
+        text-wrap: balance;
+    }
+
+    @media (max-width: 767px) {
+        .how-it-works__inner {
+            gap: var(--space-9);
+        }
+
+        .good-to-know__inner {
+            padding-top: var(--space-10);
+        }
+    }
+</style>

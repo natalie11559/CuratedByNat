@@ -23,7 +23,8 @@ export function localBusinessJsonLd(site: SiteContent) {
         slogan: site.footer.tagline,
         logo: absoluteUrl('/icon-512.png'),
         image: absoluteUrl('/og-image.jpg'),
-        areaServed: { '@type': 'State', name: 'Georgia' },
+        address: { '@type': 'PostalAddress', addressRegion: 'GA', addressCountry: 'US' },
+        areaServed: { '@type': 'State', name: 'Georgia', containedInPlace: { '@type': 'Country', name: 'United States' } },
         founder: { '@type': 'Person', name: 'Natalie' },
         sameAs: [site.social.instagramUrl, site.social.tiktokUrl].filter(Boolean),
     };

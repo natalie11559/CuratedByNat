@@ -1,0 +1,418 @@
+---
+// Design-spec 6.4 and `Text Image Section.dc.html`: the main content block. Inset (photo in the
+// 1200px container) or bleed (photo to the viewport edge), or text only when no photo is given.
+import Button from './Button.astro';
+import Photo from './Photo.astro';
+
+interface SectionPhoto {
+    image: string | null | undefined;
+    alt: string;
+    focusVertical?: string | null;
+    focusHorizontal?: string | null;
+}
+
+interface Props {
+    eyebrow?: string;
+    title: string;
+    headingLevel?: 1 | 2;
+    subhead?: string;
+    paragraphs?: readonly string[];
+    list?: readonly string[];
+    listTitle?: string;
+    /** Script sign-off such as "xo, Nat". */
+    signature?: string;
+    buttonLabel?: string;
+    buttonHref?: string;
+    photo?: SectionPhoto;
+    /** CSS aspect-ratio for the photo, e.g. "4 / 5". Bleed photos fill the section height on desktop. */
+    ratio?: string;
+    /** Aspect ratio below 768px. Defaults to `ratio`. */
+    mobileRatio?: string;
+    imageSide?: 'left' | 'right';
+    layout?: 'inset' | 'bleed';
+    bg?: 'base' | 'alt';
+    /** Rose offset frame behind the photo (inset layout only). */
+    frame?: boolean;
+    /** Section id for in-page links, e.g. "weddings". */
+    anchor?: string;
+    /** Overrides the computed `sizes` for the photo. */
+    sizes?: string;
+    /** The photo is above the fold (a page's first section): load it eagerly with high priority. */
+    priority?: boolean;
+    class?: string;
+    [attribute: `data-${string}`]: unknown;
+}
+
+const {
+    eyebrow,
+    title,
+    headingLevel = 2,
+    subhead,
+    paragraphs = [],
+    list = [],
+    listTitle,
+    signature,
+    buttonLabel,
+    buttonHref,
+    photo,
+    ratio = '4 / 5',
+    mobileRatio,
+    imageSide = 'left',
+    layout = 'inset',
+    bg = 'base',
+    frame = false,
+    anchor,
+    sizes,
+    priority = false,
+    class: className,
+    ...attributes
+} = Astro.props;
+
+const hasPhoto = Boolean(photo?.image);
+const isBleed = hasPhoto && layout === 'bleed';
+const HeadingTag = headingLevel === 1 ? 'h1' : 'h2';
+const ListTitleTag = headingLevel === 1 ? 'h2' : 'h3';
+const hasList = list.length > 0;
+
+// Rendered photo widths: inset is 44% of the container (1120px content at most, gutters 40/32/20px);
+// bleed is half the viewport; both go full width on phones.
+const defaultSizes = isBleed
+    ? '(min-width: 768px) 50vw, 100vw'
+    : '(min-width: 1200px) 493px, (min-width: 1024px) calc((100vw - 80px) * 0.44), (min-width: 768px) calc((100vw - 64px) * 0.44), calc(100vw - 40px)';
+const photoWidths = isBleed ? [480, 720, 960, 1200, 1600, 2000] : [400, 600, 800, 1000, 1200];
+
+const sectionClasses = [
+    'tis',
+    `tis--${isBleed ? 'bleed' : 'inset'}`,
+    `tis--image-${imageSide}`,
+    bg === 'alt' ? 'bg-alt' : 'bg-base',
+    !hasPhoto && 'tis--text-only',
+    hasPhoto && frame && !isBleed && 'tis--framed',
+    className,
+];
+const mediaStyle = `--tis-ratio: ${ratio}; --tis-ratio-mobile: ${mobileRatio ?? ratio};`;
+---
+
+<section id={anchor} class:list={sectionClasses} {...attributes}>
+    <div class="tis__inner reveal">
+        {
+            hasPhoto && photo && (
+                <div class="tis__media-column">
+                    <div class="tis__media-frame">
+                        {frame && !isBleed && <span class="tis__frame" aria-hidden="true" />}
+                        <div class="tis__media" style={mediaStyle}>
+                            <Photo
+                                src={photo.image}
+                                alt={photo.alt}
+                                focusVertical={photo.focusVertical}
+                                focusHorizontal={photo.focusHorizontal}
+                                widths={photoWidths}
+                                sizes={sizes ?? defaultSizes}
+                                priority={priority}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )
+        }
+
+        <div class="tis__text">
+            {eyebrow && <p class="t-eyebrow">{eyebrow}</p>}
+            <HeadingTag class:list={['tis__heading', headingLevel === 1 ? 't-h1' : 't-h2']}>{title}</HeadingTag>
+            {subhead && <p class="tis__measure t-lead">{subhead}</p>}
+            {paragraphs.map((paragraph) => <p class="tis__measure t-body">{paragraph}</p>)}
+            <slot />
+            {
+                hasList && (
+                    <div class="tis__list-block">
+                        {listTitle && <ListTitleTag class="tis__list-title t-label-caps">{listTitle}</ListTitleTag>}
+                        <ul class="tis__list" role="list">
+                            {list.map((item) => (
+                                <li class="tis__list-item">
+                                    <span class="tis__bullet" aria-hidden="true" />
+                                    <span>{item}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )
+            }
+            {signature && <p class="tis__signature t-script">{signature}</p>}
+            {
+                buttonLabel && buttonHref && (
+                    <div class="tis__button">
+                        <Button label={buttonLabel} href={buttonHref} />
+                    </div>
+                )
+            }
+        </div>
+    </div>
+</section>
+
+<style>
+    .tis {
+        overflow: hidden;
+    }
+
+    .tis__inner {
+        display: flex;
+        align-items: center;
+        gap: 88px;
+        max-width: var(--container-max);
+        margin: 0 auto;
+        padding: 104px var(--gutter);
+    }
+
+    .tis--image-right .tis__inner {
+        flex-direction: row-reverse;
+    }
+
+    .tis__media-column {
+        flex: 0 0 44%;
+        min-width: 0;
+    }
+
+    .tis__media-frame {
+        position: relative;
+    }
+
+    .tis__frame {
+        position: absolute;
+        top: 20px;
+        bottom: -20px;
+        left: -20px;
+        right: 20px;
+        border: var(--border-accent);
+        border-radius: var(--radius-sm);
+    }
+
+    .tis--image-right .tis__frame {
+        left: 20px;
+        right: -20px;
+    }
+
+    .tis__media {
+        position: relative;
+        overflow: hidden;
+        aspect-ratio: var(--tis-ratio);
+        border-radius: var(--radius-sm);
+    }
+
+    .tis__media :global(picture) {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    .tis__media :global(img) {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 700ms var(--ease-out);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .tis__media:hover :global(img) {
+            transform: scale(1.03);
+        }
+    }
+
+    .tis__text {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .tis__heading {
+        max-width: var(--measure-beside-image);
+        color: var(--color-text);
+    }
+
+    .tis__measure {
+        max-width: var(--measure-beside-image);
+    }
+
+    .tis__list-block {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        width: 100%;
+        max-width: var(--measure-beside-image);
+        margin-top: 4px;
+        padding-top: 24px;
+        border-top: var(--border-hairline);
+    }
+
+    .tis__list-title {
+        font-family: var(--font-body);
+        font-weight: 600;
+        color: var(--color-text);
+        text-wrap: wrap;
+    }
+
+    .tis__list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .tis__list-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        font-size: 16px;
+        line-height: 1.65;
+        color: var(--color-text);
+        text-align: left;
+    }
+
+    .tis__bullet {
+        flex: 0 0 8px;
+        height: 8px;
+        margin-top: 9px;
+        border: 1.25px solid var(--color-accent);
+        border-radius: var(--radius-full);
+    }
+
+    .tis__signature {
+        margin-top: 4px;
+        font-size: 56px;
+        line-height: 1;
+    }
+
+    .tis__button {
+        margin-top: 8px;
+    }
+
+    /* Text only: centered stack, wider heading. */
+    .tis--text-only .tis__text {
+        align-items: center;
+        text-align: center;
+    }
+
+    .tis--text-only .tis__heading {
+        max-width: var(--measure-text);
+    }
+
+    /* Bleed: photo runs to the viewport edge and fills the section height. */
+    .tis--bleed .tis__inner {
+        max-width: none;
+        padding: 0;
+        gap: 0;
+        align-items: stretch;
+    }
+
+    .tis--bleed .tis__media-column {
+        flex-basis: 50%;
+        display: flex;
+    }
+
+    .tis--bleed .tis__media-frame {
+        flex: 1;
+        display: flex;
+    }
+
+    .tis--bleed .tis__media {
+        flex: 1;
+        aspect-ratio: auto;
+        min-height: 600px;
+        border-radius: var(--radius-none);
+    }
+
+    .tis--bleed .tis__media :global(picture) {
+        position: absolute;
+        inset: 0;
+    }
+
+    /* The outer side lines up with the 1200px container on wide screens (120px at 1440). */
+    .tis--bleed .tis__text {
+        justify-content: center;
+        padding: 104px max(120px, calc((100vw - var(--container-max)) / 2)) 104px 88px;
+    }
+
+    .tis--bleed.tis--image-right .tis__text {
+        padding: 104px 88px 104px max(120px, calc((100vw - var(--container-max)) / 2));
+    }
+
+    @media (max-width: 1023px) {
+        .tis__inner {
+            gap: 48px;
+        }
+
+        .tis--bleed .tis__text {
+            padding: 104px var(--gutter) 104px 48px;
+        }
+
+        .tis--bleed.tis--image-right .tis__text {
+            padding: 104px 48px 104px var(--gutter);
+        }
+    }
+
+    @media (max-width: 767px) {
+        .tis__inner,
+        .tis--image-right .tis__inner {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 36px;
+            padding: 56px 20px;
+        }
+
+        .tis__media-column {
+            flex: 0 0 auto;
+        }
+
+        .tis__media {
+            aspect-ratio: var(--tis-ratio-mobile);
+        }
+
+        .tis__frame,
+        .tis--image-right .tis__frame {
+            top: 12px;
+            bottom: -12px;
+            left: -12px;
+            right: 12px;
+        }
+
+        .tis--framed .tis__text {
+            padding-top: 12px;
+        }
+
+        .tis__signature {
+            font-size: 44px;
+        }
+
+        .tis__button {
+            width: 100%;
+        }
+
+        /* The design left-aligns text-only sections on phones. */
+        .tis--text-only .tis__text {
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .tis--bleed .tis__inner,
+        .tis--bleed.tis--image-right .tis__inner {
+            padding: 0;
+            gap: 0;
+        }
+
+        .tis--bleed .tis__media {
+            flex: 0 0 auto;
+            width: 100%;
+            min-height: 0;
+            aspect-ratio: var(--tis-ratio-mobile);
+        }
+
+        .tis--bleed .tis__text,
+        .tis--bleed.tis--image-right .tis__text {
+            padding: 48px 20px 56px;
+        }
+    }
+</style>

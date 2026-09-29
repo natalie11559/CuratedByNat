@@ -1,1 +1,32 @@
-{}
+{
+  "eyebrow": "See it in action",
+  "title": "More of my work, over on Instagram.",
+  "body": "Real events. Real moments. A closer look at how I capture and curate each celebration.",
+  "buttonLabel": "Follow along",
+  "tiles": [
+    {
+      "image": "/src/assets/images/instagram/tile-nat-filming-sofa.jpg",
+      "alt": "Nat in a striped knit set holding her phone on a handheld grip, with a laptop on her lap",
+      "focusVertical": "center",
+      "focusHorizontal": "center"
+    },
+    {
+      "image": "/src/assets/images/instagram/tile-couple-kiss.jpg",
+      "alt": "Groom leaning in to kiss the bride as she holds a white rose bouquet",
+      "focusVertical": "center",
+      "focusHorizontal": "center"
+    },
+    {
+      "image": "/src/assets/images/instagram/tile-bride-laughing.jpg",
+      "alt": "Bride laughing in a lace dress, holding a white rose bouquet on a porch",
+      "focusVertical": "center",
+      "focusHorizontal": "center"
+    },
+    {
+      "image": "/src/assets/images/instagram/tile-bride-staircase.jpg",
+      "alt": "Bride in a high-neck lace gown on a white staircase, looking up at a chandelier",
+      "focusVertical": "center",
+      "focusHorizontal": "center"
+    }
+  ]
+}

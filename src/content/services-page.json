@@ -1,1 +1,64 @@
-{}
+{
+  "seo": {
+    "title": "Services | Wedding, Bachelorette & Event Content in Georgia",
+    "description": "Content for weddings, bachelorette weekends, bridal events, and celebrations in Georgia. Candid moments, curated into a story. Inquire for packages."
+  },
+  "hero": {
+    "eyebrow": "Services",
+    "title": "Content for every celebration.",
+    "body": "From the first look to the last dance, from bachelorette brunch to the birthday toast, I capture the moments a camera roll would miss and curate them into a collection you'll want to watch again. Every celebration is different, so I share package details once you inquire."
+  },
+  "extras": {
+    "title": "Extras",
+    "body": "Want a little more? These can be added on. Details come with your packages after you inquire.",
+    "items": [
+      "Proposal content",
+      "Engagement shoot",
+      "Rehearsal dinner coverage",
+      "Extra hours of coverage",
+      "Extra reels"
+    ]
+  },
+  "howItWorks": {
+    "title": "How it works",
+    "steps": [
+      {
+        "title": "Inquire.",
+        "body": "Tell me about your celebration using the inquiry form. It takes just a few minutes."
+      },
+      {
+        "title": "Get the details.",
+        "body": "I'll follow up with my availability and packages for your event."
+      },
+      {
+        "title": "Plan together.",
+        "body": "Book an optional planning consultation so I know the moments and people that matter most."
+      },
+      {
+        "title": "Capture.",
+        "body": "On the day, I capture it all on iPhone while you stay present with your people."
+      },
+      {
+        "title": "Relive it.",
+        "body": "You get full access to your raw content, plus reels curated from your day."
+      }
+    ]
+  },
+  "testimonial": {
+    "quote": "I LOVED having you there!! I love that I have the sweetest memories in my camera roll where I didn't even realize a camera was on me. The reel that you made was literally so perfect and I loved getting to rewatch moments throughout the day because it flew by so fast! You have a great eye for little details. I'm so grateful you were there",
+    "name": "Emory Morris"
+  },
+  "goodToKnow": {
+    "label": "Good to know",
+    "items": [
+      "Packages are shared after you inquire, so I can match options to your event.",
+      "Content creation works alongside your photographer and videographer, not instead of them.",
+      "Based in Georgia and happy to travel. Share your location when you inquire and we'll talk details."
+    ]
+  },
+  "closing": {
+    "title": "Have a celebration coming up?",
+    "body": "Let's make it one worth reliving.",
+    "buttonLabel": "Send an inquiry"
+  }
+}
