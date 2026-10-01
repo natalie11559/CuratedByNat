@@ -59,7 +59,7 @@ Nothing secret is committed. `.dev.vars` and `.env` are git-ignored.
 | Name | Kind | Where it is set |
 |---|---|---|
 | `PUBLIC_TURNSTILE_SITE_KEY` | Public, build time | Cloudflare > Workers > curatedbynat > Settings > Build > Variables |
-| `PUBLIC_KEYSTATIC_CLOUD_PROJECT` | Public, build time | Same place. Format `team-slug/project-slug` from Keystatic Cloud. |
+| `PUBLIC_KEYSTATIC_CLOUD_PROJECT` | Public, build time, optional | Overrides the project in `keystatic.config.ts` (`curatedbynat/curatedbynat`). |
 | `TURNSTILE_SECRET_KEY` | Secret, runtime | `npx wrangler secret put TURNSTILE_SECRET_KEY` |
 | `RESEND_API_KEY` | Secret, runtime | `npx wrangler secret put RESEND_API_KEY` |
 | `INQUIRY_TO`, `INQUIRY_FROM` | Plain vars | `wrangler.jsonc` |
