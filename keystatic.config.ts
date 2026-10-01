@@ -19,7 +19,7 @@ const storage =
 export default config({
     storage,
     // Keystatic Cloud project (team/project). Public, not a secret; the env var only overrides it.
-    cloud: { project: import.meta.env.PUBLIC_KEYSTATIC_CLOUD_PROJECT ?? 'curatedbynat/curatedbynat' },
+    cloud: { project: import.meta.env.PUBLIC_KEYSTATIC_CLOUD_PROJECT ?? 'curated-by-nat/curatedbynat' },
     ui: {
         brand: { name: 'Curated by Nat' },
         navigation: {
