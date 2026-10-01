@@ -74,6 +74,13 @@ npx wrangler d1 execute curatedbynat-inquiries --remote --command "SELECT create
 
 The same table is browsable in the Cloudflare dashboard under Storage & Databases > D1.
 
+## How it deploys now
+
+Cloudflare Workers Builds is connected to `natalie11559/CuratedByNat`. Every push to `main`, including
+each save Nat makes in Keystatic, runs `npm run build` and `npx wrangler deploy` (build variable
+`PUBLIC_TURNSTILE_SITE_KEY`). The site is live at https://curatedbynat.com. Build logs are under
+Workers & Pages > curatedbynat > Deployments.
+
 ## Deploying (first time)
 
 Do these while signed in to the Curated by Nat accounts.
