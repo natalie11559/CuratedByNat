@@ -6,6 +6,10 @@
     "main": "@astrojs/cloudflare/entrypoints/server",
     "assets": { "directory": "./dist", "binding": "ASSETS" },
     "observability": { "enabled": true },
+    "routes": [
+        { "pattern": "curatedbynat.com", "custom_domain": true },
+        { "pattern": "www.curatedbynat.com", "custom_domain": true }
+    ],
     "d1_databases": [
         {
             "binding": "DB",
