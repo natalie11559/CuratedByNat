@@ -154,3 +154,36 @@ describe('access token timing', () => {
         assert.equal(daysUntilExpiry({ token: 't', refreshedAt: null, expiresAt: inDays(5) }, now), 5);
     });
 });
+
+describe('instagramHealth', () => {
+    it('stays quiet until the job has run, then reports problems in plain words', async () => {
+        const { createTestD1 } = await import('./helpers/d1-sqlite.ts');
+        const { instagramHealth } = await import('../../src/lib/instagram/health.ts');
+        const db = createTestD1();
+        const now = new Date('2026-06-15T12:00:00Z');
+        const put = (key: string, value: unknown) =>
+            db.raw.prepare('INSERT OR REPLACE INTO instagram_state (key, value, updated_at) VALUES (?, ?, ?)').run(key, JSON.stringify(value), 'x');
+
+        assert.deepEqual(await instagramHealth(db, now), { ok: true });
+        put('last_sync', { at: 'x', ok: true, problem: null, posts: 12 });
+        put('token', { token: 't', refreshedAt: '2026-06-10T00:00:00Z', expiresAt: '2026-08-09T00:00:00Z' });
+        assert.deepEqual(await instagramHealth(db, now), { ok: true });
+
+        put('token', { token: 't', refreshedAt: '2026-05-01T00:00:00Z', expiresAt: '2026-06-20T00:00:00Z' });
+        const expiring = await instagramHealth(db, now);
+        assert.equal(expiring.ok, false);
+        assert.match(expiring.ok ? '' : expiring.message, /runs out in 4 days/);
+
+        put('last_sync', { at: 'x', ok: false, problem: 'Instagram responded 400: Invalid OAuth access token.', posts: 0 });
+        const failed = await instagramHealth(db, now);
+        assert.equal(failed.ok, false);
+        assert.equal((failed.ok ? '' : failed.message).includes('OAuth'), false); // technical detail stays out of Nat's view
+    });
+
+    it('does not mind the table being missing', async () => {
+        const { createTestD1 } = await import('./helpers/d1-sqlite.ts');
+        const { instagramHealth } = await import('../../src/lib/instagram/health.ts');
+        const db = createTestD1({ migrations: ['0001_inquiries.sql'] });
+        assert.deepEqual(await instagramHealth(db), { ok: true });
+    });
+});

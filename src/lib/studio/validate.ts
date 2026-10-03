@@ -382,3 +382,54 @@ export function validateCalendarItem(raw: RawInput): Checked<CalendarItemInput> 
     if (Object.keys(errors).length > 0) return { ok: false, errors };
     return { ok: true, value: { type, title, leadId, startsAt, endsAt, allDay, location, notes } };
 }
+
+// ---- Reply templates ---------------------------------------------------------------------------------
+
+export interface TemplateInput {
+    name: string;
+    subject: string;
+    body: string;
+    sortOrder: number;
+    isDraft: boolean;
+}
+
+export function validateTemplate(raw: RawInput): Checked<TemplateInput> {
+    const errors: Errors = {};
+    const name = str(raw, 'name');
+    if (!name) errors.name = 'Give the template a name.';
+    else if (tooLong(name, 80)) errors.name = 'That name is too long.';
+    const subject = str(raw, 'subject');
+    if (!subject) errors.subject = 'Add a subject line.';
+    else if (tooLong(subject, 200)) errors.subject = 'That subject is too long.';
+    const body = str(raw, 'body');
+    if (!body) errors.body = 'Add the message.';
+    else if (tooLong(body, 8000)) errors.body = 'That message is too long.';
+    const sortOrder = str(raw, 'sort_order') === '' ? 0 : Number(str(raw, 'sort_order'));
+    if (!Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 999) errors.sort_order = 'Use a whole number from 0 to 999.';
+
+    if (Object.keys(errors).length > 0) return { ok: false, errors };
+    return { ok: true, value: { name, subject, body, sortOrder, isDraft: str(raw, 'is_draft') === '1' } };
+}
+
+export interface GeneralSettingsInput {
+    followUpDays: number;
+    lostReasons: string[];
+}
+
+export function validateGeneralSettings(raw: RawInput): Checked<GeneralSettingsInput> {
+    const errors: Errors = {};
+    const followUpDays = Number(str(raw, 'follow_up_days'));
+    if (!Number.isInteger(followUpDays) || followUpDays < 1 || followUpDays > 60) errors.follow_up_days = 'Use a whole number from 1 to 60.';
+
+    const reasons = str(raw, 'lost_reasons')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .filter((line, index, all) => all.indexOf(line) === index);
+    if (reasons.length === 0 || reasons.length > 12 || reasons.some((line) => tooLong(line, 60))) {
+        errors.lost_reasons = 'Add between 1 and 12 reasons, one per line.';
+    }
+
+    if (Object.keys(errors).length > 0) return { ok: false, errors };
+    return { ok: true, value: { followUpDays, lostReasons: reasons } };
+}

@@ -28,6 +28,10 @@ export const NOTICES: Record<string, string> = {
     'item-added': 'Added to your calendar.',
     'item-saved': 'Calendar item saved.',
     'item-removed': 'Calendar item removed.',
+    'template-saved': 'Template saved.',
+    'template-deleted': 'Template deleted.',
+    'settings-saved': 'Settings saved.',
+    purged: 'Deleted forever.',
     'feed-reset': 'Done. Your old calendar link has stopped working. Use the new one below.',
 };
 
@@ -43,6 +47,9 @@ export const ERRORS: Record<string, string> = {
     'file-empty': 'That file is empty.',
     'file-type': 'Studio keeps PDFs and photos (JPG, PNG or HEIC). That file looks like something else.',
     'file-too-large': 'That file is over 25 MB. Try a smaller scan or photo.',
+    'too-soon': 'That has to stay in Recently deleted for 30 days before it can be deleted forever.',
+    'has-records': 'This client has a booking or files, so Studio keeps them. Ask Matt if you really need them gone.',
+    'is-contract': 'Studio never deletes a signed contract.',
     'storage-missing': "File storage isn't available right now.",
 };
 
@@ -83,6 +90,10 @@ export const FIELD_LABELS: Record<string, string> = {
     lead_id: 'Client',
     title: 'Title',
     date: 'Date',
+    subject: 'Subject',
+    body: 'Message',
+    follow_up_days: 'Days before a nudge',
+    lost_reasons: 'Reasons for losing a lead',
     start_time: 'Start time',
     end_time: 'End time',
 };

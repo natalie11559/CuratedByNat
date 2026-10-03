@@ -1365,3 +1365,63 @@ html {
 .st-choice__sub {
     color: var(--color-text-muted);
 }
+
+/* ---- Clients, templates and Recently deleted -------------------------------------------------------- */
+
+.st-filters--clients {
+    margin-bottom: var(--space-3);
+}
+
+@media (min-width: 900px) {
+    .st-filters--clients {
+        grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)) auto;
+    }
+}
+
+.st-rows--plain {
+    border-top: var(--border-hairline);
+}
+
+.st-deleted {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+    border-bottom: var(--border-hairline);
+}
+
+.st-deleted__main a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+}
+
+.st-deleted__main {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+}
+
+.st-deleted__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.st-details--inline {
+    margin: 0;
+    border-top: 0;
+    flex: 1 1 100%;
+}
+
+.st-links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.st-body .st-linkrow-item {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+}

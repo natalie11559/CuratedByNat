@@ -9,6 +9,7 @@ import FilesCard from '../../../components/studio/FilesCard.astro';
 import LeadForm from '../../../components/studio/LeadForm.astro';
 import StagePill from '../../../components/studio/StagePill.astro';
 import StudioLayout from '../../../layouts/StudioLayout.astro';
+import { listTemplates } from '../../../lib/studio/admin';
 import { getBookingsForLead, listExtras, listPackages } from '../../../lib/studio/bookings';
 import { formatDate, formatDateRange, formatShortDate, formatTimestamp, relativeDays, todayEastern } from '../../../lib/studio/dates';
 import { hasSignedContract, listFiles } from '../../../lib/studio/files';
@@ -29,7 +30,7 @@ if (!db || !isId(id)) return Astro.redirect('/studio/pipeline?error=not-found', 
 const lead = await getLead(db, id, { includeDeleted: true });
 if (!lead) return Astro.redirect('/studio/pipeline?error=not-found', 303);
 
-const [activities, inquiries, settings, bookings, packages, extras, files, contractOnFile, calendar] = await Promise.all([
+const [activities, inquiries, settings, bookings, packages, extras, files, contractOnFile, calendar, templates] = await Promise.all([
     listActivities(db, id),
     listInquiriesForLead(db, id),
     getSettings(db),
@@ -39,6 +40,7 @@ const [activities, inquiries, settings, bookings, packages, extras, files, contr
     listFiles(db, id),
     hasSignedContract(db, id),
     loadCalendar(db),
+    listTemplates(db),
 ]);
 const upcoming = calendar.filter((entry) => entry.leadId === id && entry.endDate >= todayEastern());
 const today = todayEastern();
@@ -139,6 +141,21 @@ const details: [string, string][] = [
                         </div>
                     </form>
                 </section>
+
+                {templates.length > 0 && (
+                    <section class="st-card" aria-labelledby="reply-heading">
+                        <h2 id="reply-heading" class="st-card__title">Reply</h2>
+                        <form class="st-form st-form--row" method="get" action={`/studio/leads/${id}/reply`}>
+                            <div class="st-field">
+                                <label class="st-label" for="reply-pick">Pick a saved message</label>
+                                <select class="st-select" id="reply-pick" name="template">
+                                    {templates.map((template) => <option value={template.id}>{template.name}</option>)}
+                                </select>
+                            </div>
+                            <button class="st-button st-button--secondary" type="submit">Preview</button>
+                        </form>
+                    </section>
+                )}
 
                 <section class="st-card" aria-labelledby="stage-heading">
                     <h2 id="stage-heading" class="st-card__title">Where they are</h2>

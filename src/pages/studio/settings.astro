@@ -5,14 +5,24 @@ import PriceListForm from '../../components/studio/PriceListForm.astro';
 import StudioLayout from '../../layouts/StudioLayout.astro';
 import { listExtras, listPackages, packageDetails } from '../../lib/studio/bookings';
 import { formatCents } from '../../lib/studio/money';
+import { listTemplates } from '../../lib/studio/admin';
 import { getFeedToken } from '../../lib/studio/calendarDb';
+import { firstNameFromEmail } from '../../lib/studio/people';
+import { getSettings } from '../../lib/studio/queries';
+import { PLACEHOLDERS } from '../../lib/studio/templates';
 import { studioDb } from '../../lib/studio/server';
 
 export const prerender = false;
 
 const db = studioDb();
 if (!db) return Astro.redirect('/studio?error=database-missing', 303);
-const [packages, extras] = await Promise.all([listPackages(db, { includeInactive: true }), listExtras(db, { includeInactive: true })]);
+const [packages, extras, templates, general] = await Promise.all([
+    listPackages(db, { includeInactive: true }),
+    listExtras(db, { includeInactive: true }),
+    listTemplates(db),
+    getSettings(db),
+]);
+const user = Astro.locals.studioUser;
 const feedUrl = `${Astro.url.origin}/cal/${await getFeedToken(db)}.ics`;
 const webcalUrl = feedUrl.replace(/^https?:/, 'webcal:');
 const kinds = [
@@ -62,6 +72,107 @@ const kinds = [
                 <p>Do this if the link was shared by mistake. The old link stops working straight away, and your phone's calendar will go quiet until you add the new link the same way as above.</p>
                 <div class="st-actions">
                     <button class="st-button st-button--danger" type="submit">Make a new link</button>
+                </div>
+            </form>
+        </details>
+    </section>
+
+    <section class="st-card" id="general" aria-labelledby="general-heading">
+        <h2 class="st-card__title" id="general-heading">Follow-ups and lost leads</h2>
+        <form class="st-form" method="post" action="/api/studio/settings/general">
+            <div class="st-field">
+                <label class="st-label" for="general-days">Flag someone after this many quiet days <span class="st-optional">(1 to 60)</span></label>
+                <input class="st-input st-input--small" id="general-days" name="follow_up_days" type="number" inputmode="numeric" min="1" max="60" step="1" required value={general.followUpDays} />
+            </div>
+            <div class="st-field">
+                <label class="st-label" for="general-reasons">Reasons you can pick when a lead is lost <span class="st-optional">(one per line)</span></label>
+                <textarea class="st-textarea" id="general-reasons" name="lost_reasons" rows="7" required>{general.lostReasons.join('\n')}</textarea>
+            </div>
+            <div class="st-actions">
+                <button class="st-button st-button--primary" type="submit">Save</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="st-section" id="templates" aria-labelledby="templates-heading">
+        <h2 class="st-section-title" id="templates-heading">Reply templates</h2>
+        <p class="st-hint">Saved messages that fill in a client's details. Studio doesn't send them: they open in your own email app, or you copy them. The starter ones are drafts. Read them over and make them sound like you.</p>
+        <details class="st-details">
+            <summary class="st-details__summary">Blanks you can use</summary>
+            <dl class="st-dl">
+                {PLACEHOLDERS.map((blank) => (
+                    <div class="st-dl__row">
+                        <dt>{`{${blank.name}}`}</dt>
+                        <dd>{blank.meaning}</dd>
+                    </div>
+                ))}
+            </dl>
+        </details>
+        {templates.map((template) => (
+            <div class="st-price-item">
+                <details class="st-details">
+                    <summary class="st-details__summary">
+                        <span class="st-price-item__head">
+                            <span>{template.name}</span>
+                            {template.is_draft === 1 && <span class="st-pill">Draft</span>}
+                        </span>
+                    </summary>
+                    <form class="st-form" method="post" action={`/api/studio/templates/${template.id}`}>
+                        <div class="st-field">
+                            <label class="st-label" for={`t-${template.id.slice(-4)}-name`}>Name</label>
+                            <input class="st-input" id={`t-${template.id.slice(-4)}-name`} name="name" type="text" required maxlength="80" value={template.name} />
+                        </div>
+                        <div class="st-field">
+                            <label class="st-label" for={`t-${template.id.slice(-4)}-subject`}>Subject</label>
+                            <input class="st-input" id={`t-${template.id.slice(-4)}-subject`} name="subject" type="text" required maxlength="200" value={template.subject} />
+                        </div>
+                        <div class="st-field">
+                            <label class="st-label" for={`t-${template.id.slice(-4)}-body`}>Message</label>
+                            <textarea class="st-textarea" id={`t-${template.id.slice(-4)}-body`} name="body" rows="12" required maxlength="8000">{template.body}</textarea>
+                        </div>
+                        <div class="st-field-row">
+                            <div class="st-field">
+                                <label class="st-label" for={`t-${template.id.slice(-4)}-order`}>Order in the list</label>
+                                <input class="st-input" id={`t-${template.id.slice(-4)}-order`} name="sort_order" type="number" inputmode="numeric" min="0" max="999" value={template.sort_order} />
+                            </div>
+                            <label class="st-check">
+                                <input type="checkbox" name="is_draft" value="1" checked={template.is_draft === 1} />
+                                <span>Still a draft</span>
+                            </label>
+                        </div>
+                        <div class="st-actions">
+                            <button class="st-button st-button--primary" type="submit">Save</button>
+                        </div>
+                    </form>
+                    <details class="st-details st-details--danger">
+                        <summary class="st-details__summary">Delete this template</summary>
+                        <form class="st-form" method="post" action={`/api/studio/templates/${template.id}`}>
+                            <input type="hidden" name="action" value="delete" />
+                            <div class="st-actions">
+                                <button class="st-button st-button--danger" type="submit">Delete {template.name}</button>
+                            </div>
+                        </form>
+                    </details>
+                </details>
+            </div>
+        ))}
+        <details class="st-details">
+            <summary class="st-details__summary">Add a template</summary>
+            <form class="st-form" method="post" action="/api/studio/templates">
+                <div class="st-field">
+                    <label class="st-label" for="new-template-name">Name</label>
+                    <input class="st-input" id="new-template-name" name="name" type="text" required maxlength="80" />
+                </div>
+                <div class="st-field">
+                    <label class="st-label" for="new-template-subject">Subject</label>
+                    <input class="st-input" id="new-template-subject" name="subject" type="text" required maxlength="200" />
+                </div>
+                <div class="st-field">
+                    <label class="st-label" for="new-template-body">Message</label>
+                    <textarea class="st-textarea" id="new-template-body" name="body" rows="10" required maxlength="8000"></textarea>
+                </div>
+                <div class="st-actions">
+                    <button class="st-button st-button--primary" type="submit">Add template</button>
                 </div>
             </form>
         </details>
@@ -127,4 +238,12 @@ const kinds = [
             );
         })
     }
+
+    <section class="st-card" aria-labelledby="account-heading">
+        <h2 class="st-card__title" id="account-heading">More</h2>
+        <ul class="st-links" role="list">
+            <li><a class="st-linkrow-item" href="/studio/deleted">Recently deleted</a></li>
+            <li><a class="st-linkrow-item" href="/cdn-cgi/access/logout">Sign out{user ? ` (signed in as ${firstNameFromEmail(user.email)})` : ''}</a></li>
+        </ul>
+    </section>
 </StudioLayout>

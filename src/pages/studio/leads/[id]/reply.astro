@@ -1,0 +1,106 @@
+---
+// Fill a saved reply with this client's details. Studio never sends the email: it opens in Nat's own email app, or she
+// copies it.
+import Notice from '../../../../components/studio/Notice.astro';
+import StudioLayout from '../../../../layouts/StudioLayout.astro';
+import { getTemplate, listTemplates } from '../../../../lib/studio/admin';
+import { getBookingsForLead, listExtras, listPackages, packageDetails } from '../../../../lib/studio/bookings';
+import { isId } from '../../../../lib/studio/messages';
+import { celebratingOf, fullName, getLead } from '../../../../lib/studio/queries';
+import { studioDb } from '../../../../lib/studio/server';
+import { fillTemplate, mailtoLink, MAILTO_SAFE_LENGTH, PLACEHOLDERS, templateValues } from '../../../../lib/studio/templates';
+
+export const prerender = false;
+
+const db = studioDb();
+const id = Astro.params.id ?? '';
+if (!db || !isId(id)) return Astro.redirect('/studio/pipeline?error=not-found', 303);
+const lead = await getLead(db, id);
+if (!lead) return Astro.redirect('/studio/pipeline?error=not-found', 303);
+
+const [templates, packages, extras, bookings] = await Promise.all([listTemplates(db), listPackages(db), listExtras(db), getBookingsForLead(db, id)]);
+const requested = Astro.url.searchParams.get('template');
+const selected = (isId(requested) ? await getTemplate(db, requested) : null) ?? templates[0] ?? null;
+
+const values = templateValues({
+    lead: { ...lead, celebrating: celebratingOf(lead) },
+    packages: packages.map((entry) => ({ name: entry.name, priceCents: entry.price_cents, details: packageDetails(entry) })),
+    extras: extras.map((entry) => ({ name: entry.name, priceCents: entry.price_cents, details: [] })),
+    bookedPackage: bookings[0]?.package_name,
+});
+const subject = selected ? fillTemplate(selected.subject, values) : null;
+const body = selected ? fillTemplate(selected.body, values) : null;
+const stand_ins = [...new Set([...(subject?.usedFallbacks ?? []), ...(body?.usedFallbacks ?? [])])].map(
+    (name) => PLACEHOLDERS.find((entry) => entry.name === name)?.meaning.toLowerCase() ?? name,
+);
+const unknown = [...new Set([...(subject?.unknown ?? []), ...(body?.unknown ?? [])])];
+const mailto = lead.email && subject && body ? mailtoLink(lead.email, subject.text, body.text) : null;
+const tooLong = Boolean(mailto && mailto.length > MAILTO_SAFE_LENGTH);
+const leadPage = `/studio/leads/${id}`;
+---
+
+<StudioLayout title={`Reply to ${lead.first_name}`} current="pipeline">
+    <p class="st-eyebrow"><a href={leadPage}>{fullName(lead)}</a></p>
+    <h1 class="st-title">Reply to {lead.first_name}</h1>
+    <Notice />
+
+    {
+        templates.length === 0 ? (
+            <p class="st-card">You don't have any templates yet. <a href="/studio/settings#templates">Add one in Settings</a>.</p>
+        ) : (
+            <>
+                <form class="st-form st-form--row" method="get" action={`${leadPage}/reply`}>
+                    <div class="st-field">
+                        <label class="st-label" for="reply-template">Which message?</label>
+                        <select class="st-select" id="reply-template" name="template">
+                            {templates.map((template) => (
+                                <option value={template.id} selected={template.id === selected?.id}>
+                                    {template.name}{template.is_draft ? ' (draft)' : ''}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <button class="st-button st-button--secondary" type="submit">Show</button>
+                </form>
+
+                {selected?.is_draft === 1 && (
+                    <p class="st-callout">This is one of the starter drafts. Read it over and change it to sound like you in <a href="/studio/settings#templates">Settings</a>.</p>
+                )}
+                {stand_ins.length > 0 && <p class="st-callout">Some details aren't known yet, so a stand-in was used for: {stand_ins.join(', ')}.</p>}
+                {unknown.length > 0 && <p class="st-callout">These blanks aren't recognised and were left as they are: {unknown.map((name) => `{${name}}`).join(', ')}.</p>}
+
+                <section class="st-card" aria-labelledby="preview-heading">
+                    <h2 class="st-card__title" id="preview-heading">The message</h2>
+                    <div class="st-field">
+                        <label class="st-label" for="reply-subject">Subject</label>
+                        <input class="st-input" id="reply-subject" type="text" readonly value={subject?.text ?? ''} />
+                    </div>
+                    <div class="st-field">
+                        <label class="st-label" for="reply-body">Message</label>
+                        <textarea class="st-textarea" id="reply-body" rows="16" readonly>{body?.text ?? ''}</textarea>
+                    </div>
+                    <div class="st-actions st-actions--spaced">
+                        {mailto ? <a class="st-button st-button--primary" href={mailto}>Open in Mail</a> : null}
+                        <button class="st-button st-button--secondary st-js-only" type="button" data-copy-from="reply-body" data-copy-status="reply-copy-status">Copy message</button>
+                        <button class="st-button st-button--secondary st-js-only" type="button" data-copy-from="reply-subject" data-copy-status="reply-copy-status">Copy subject</button>
+                    </div>
+                    <p class="st-hint" id="reply-copy-status" aria-live="polite"></p>
+                    {!lead.email && <p class="st-hint">There's no email address for {lead.first_name} yet. Copy the message to send it another way, or add their email under Edit details.</p>}
+                    {tooLong && <p class="st-hint">This message is long. If your email app cuts it off, use Copy message instead.</p>}
+                </section>
+
+                <section class="st-card" aria-labelledby="sent-heading">
+                    <h2 class="st-card__title" id="sent-heading">Sent it?</h2>
+                    <form class="st-form" method="post" action={`/api/studio/leads/${id}/log`}>
+                        <input type="hidden" name="type" value="email" />
+                        <input type="hidden" name="body" value={selected ? `Sent "${selected.name}".` : 'Sent an email.'} />
+                        <p>Write it on {lead.first_name}'s timeline, so the follow-up reminder starts counting from today.</p>
+                        <div class="st-actions">
+                            <button class="st-button st-button--secondary" type="submit">I sent it</button>
+                        </div>
+                    </form>
+                </section>
+            </>
+        )
+    }
+</StudioLayout>

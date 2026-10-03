@@ -4,6 +4,7 @@
 import type { APIRoute } from 'astro';
 import { isId } from '../../../../../lib/studio/messages';
 import { forbidden, isSameOrigin, json } from '../../../../../lib/studio/http';
+import { purgeLead } from '../../../../../lib/studio/admin';
 import { createBooking, getBookingsForLead, listExtras, listPackages } from '../../../../../lib/studio/bookings';
 import {
     changeStage,
@@ -90,6 +91,10 @@ export const POST: APIRoute = async ({ request, url, locals, params }) => {
         case 'delete': {
             const result = await softDeleteLead(db, id, { actor });
             return result.ok ? redirectTo('/studio/pipeline', { notice: 'deleted' }) : redirectTo('/studio/pipeline', { error: result.error });
+        }
+        case 'purge': {
+            const result = await purgeLead(db, id, { actor });
+            return result.ok ? redirectTo('/studio/deleted', { notice: 'purged' }) : redirectTo('/studio/deleted', { error: result.error });
         }
         case 'restore':
             return finish(await restoreLead(db, id, { actor }), 'restored', leadPage);

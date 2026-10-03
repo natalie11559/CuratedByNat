@@ -7,6 +7,7 @@ import { formatShortDate, relativeDays, todayEastern } from '../../lib/studio/da
 import { formatClock } from '../../lib/studio/tz';
 import { countUnlinkedInquiries, syncUnlinkedInquiries } from '../../lib/studio/leads';
 import { firstNameFromEmail } from '../../lib/studio/people';
+import { instagramHealth, type InstagramHealth } from '../../lib/instagram/health';
 import { listBalancesDue, type BalanceDue } from '../../lib/studio/bookings';
 import { formatCents } from '../../lib/studio/money';
 import { calendarTypeLabel } from '../../lib/studio/calendar';
@@ -27,6 +28,7 @@ let overview = null as ReturnType<typeof buildToday> | null;
 let followUpDays = 5;
 let total = 0;
 let balances: BalanceDue[] = [];
+let instagram: InstagramHealth = { ok: true };
 
 if (db) {
     // Website inquiries that arrived before Studio existed, or whose lead step failed, are picked up here.
@@ -39,6 +41,7 @@ if (db) {
     total = leads.length;
     overview = buildToday(leads, { today, followUpDays, entries: await loadCalendar(db) });
     balances = await listBalancesDue(db, today).catch(() => []);
+    instagram = await instagramHealth(db);
 }
 ---
 
@@ -57,6 +60,15 @@ if (db) {
                 <form method="post" action="/api/studio/inquiries/sync" class="st-actions">
                     <button class="st-button st-button--primary" type="submit">Try again</button>
                 </form>
+            </section>
+        )
+    }
+
+    {
+        !instagram.ok && (
+            <section class="st-card st-card--warn" aria-labelledby="instagram-heading">
+                <h2 id="instagram-heading" class="st-card__title">Instagram needs a quick look</h2>
+                <p>{instagram.message}</p>
             </section>
         )
     }

@@ -49,6 +49,13 @@ const pairs = [
     { fg: '--color-error', bg: '--color-surface', kind: 'ui', use: 'Error border on white fields' },
     { fg: '--color-success', bg: '--color-bg', kind: 'text', use: 'Success text on base' },
     { fg: '--color-success', bg: '--color-surface', kind: 'text', use: 'Success text on white' },
+    // Studio (the private tool) uses the same colours; these are the pairs it adds
+    { fg: '--color-accent-text', bg: '--color-surface', kind: 'text', use: 'Studio: links inside white cards' },
+    { fg: '--color-button', bg: '--color-surface', kind: 'text', use: 'Studio: outline button labels and filter chips on white cards' },
+    { fg: '--color-on-photo', bg: '--color-error', kind: 'text', use: 'Studio: the red delete button label' },
+    { fg: '--color-on-dark', bg: '--color-button', kind: 'text', use: 'Studio: the selected stage chip and today in the month grid' },
+    { fg: '--color-text', bg: '--color-bg-alt', kind: 'text', use: 'Studio: pills, counts and the current page in the side menu' },
+    { fg: '--color-success', bg: '--color-surface', kind: 'text', use: 'Studio: "Saved" banners' },
     // Buttons
     { fg: '--color-on-dark', bg: '--color-button', kind: 'text', use: 'Primary and photo button label' },
     { fg: '--color-on-dark', bg: '--color-button-hover', kind: 'text', use: 'Button label on hover' },

@@ -17,6 +17,7 @@ Nat edits everything in the browser at `/keystatic`. Her guide is [EDITING-GUIDE
 | Cloudflare D1 | Stores every inquiry as a backup, before the email is sent. |
 | Cloudflare Turnstile | Invisible spam check on the form, together with a honeypot field and a minimum fill time. |
 | [Resend](https://resend.com) | Emails each inquiry to hello@curatedbynat.com with Reply-To set to the visitor. |
+| Studio (private) | A private CRM at `/studio` for Nat: leads, pipeline, bookings and payments, contracts, calendar and reply templates. Behind Cloudflare Access. See [Studio](#studio-the-private-crm). |
 | Cloudflare R2 + a cron trigger | Every six hours the Worker copies Nat's newest Instagram posts into a bucket; the next build turns them into the Home tiles and the "Inquire now" slideshow. See [Instagram feed](#instagram-feed). |
 
 Content lives in `src/content/*.json` (one file per editor section) and photos in
@@ -66,6 +67,8 @@ Nothing secret is committed. `.dev.vars` and `.env` are git-ignored.
 | `INQUIRY_TO`, `INQUIRY_FROM` | Plain vars | `wrangler.jsonc` |
 | `INSTAGRAM_ACCESS_TOKEN` | Secret, runtime | `npx wrangler secret put INSTAGRAM_ACCESS_TOKEN`. Only the first token: the refreshed one is kept in D1. Set it again if the connection ever expires. |
 | `DEPLOY_HOOK_URL` | Secret, runtime | `npx wrangler secret put DEPLOY_HOOK_URL` (a Workers Builds deploy hook for `main`). |
+| `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `STUDIO_ALLOWED_EMAILS` | Secrets, runtime | `npx wrangler secret put ...`. Studio's sign-in settings; see [STUDIO-SETUP.md](STUDIO-SETUP.md). Studio stays closed (404) until all three are set. |
+| `STUDIO_DEV_BYPASS`, `STUDIO_DEV_EMAIL` | Local only | `.dev.vars`. Skip the Access sign-in on localhost in development. Ignored in production builds. |
 | `INSTAGRAM_FEED_URL` | Build-time, optional | Where the build downloads the feed from. Defaults to the live site in Cloudflare's builds (`WORKERS_CI`); unset locally, so local builds never touch the network. `off` disables it. |
 
 If `RESEND_API_KEY` is missing in production, inquiries are still saved to D1 but no email is sent.
@@ -124,6 +127,54 @@ Order matters: create the bucket and run the migration *before* the code that us
 
 A new token is only needed if the connection lapses (for example Nat changes her Instagram password or
 removes the app). Repeat steps 4.3 to 5.
+
+## Studio (the private CRM)
+
+Studio lives at `https://curatedbynat.com/studio`, in the same Worker, repository and D1 database as the website.
+Nat uses it on her phone to track every inquiry through her booking pipeline, record bookings and payments, keep
+signed contracts, run her calendar (also shown in her phone's own calendar app) and reply with saved messages.
+Her guide is [STUDIO-GUIDE.md](STUDIO-GUIDE.md); Matt's setup steps are in [STUDIO-SETUP.md](STUDIO-SETUP.md).
+
+**What it is made of**
+
+| Piece | Where |
+|---|---|
+| Pages (server-rendered Astro, no React, no inline script or style) | `src/pages/studio/**`, `src/components/studio/**`, `src/layouts/StudioLayout.astro` |
+| Form handlers (all writes are same-origin `POST`s that redirect back with a banner code) | `src/pages/api/studio/**` |
+| Logic, with no Cloudflare imports so Node can test it | `src/lib/studio/*.ts` (`queries`, `leads`, `bookings`, `files`, `calendar`, `ics`, `templates`, `clients`, `admin`, `money`, `dates`, `tz`, `validate`, ...) |
+| Tables | `migrations/0003` to `0007` (leads, activities, audit_log, settings, packages, extras, bookings, payments, files, calendar_items, templates) |
+| Styles and script | `src/studio/studio.css` and `client.js`, served by the guarded routes `/studio/app.css` and `/studio/app.js` |
+| Files (contracts) | R2 bucket `curatedbynat-studio-files` (binding `STUDIO_FILES`), private, random keys |
+| Phone calendar | `GET /cal/<token>.ics` (`src/pages/cal/[token].ics.ts`) |
+
+**Security, in layers.** Cloudflare Access (one-time email code, two allowed emails) sits in front of
+`/studio*` and `/api/studio*`. The Worker then checks the Access token itself on every Studio request
+(`src/lib/studio/access.ts`: RS256 signature, issuer, audience, expiry, email allowlist) and answers a plain 404
+if anything is wrong, so a mistake in Access can't expose data. Studio responses are `no-store`, `noindex`,
+`X-Frame-Options: DENY` and carry a strict Content-Security-Policy with no inline code and no third-party
+scripts. Writes check the `Origin` header and validate every field on the server; money is whole cents; every
+query is parameterized; uploads are identified by their first bytes and served only through an authenticated
+route; deletes are soft with a 30-day Recently deleted view; payments, files, deletions and settings leave an
+audit trail. Client details are never written to the logs.
+
+**Nothing from Studio reaches the public site.** Every Studio page sets `prerender = false`, and `npm run build`
+ends with `scripts/check-build-privacy.mjs`, which fails the build if Studio's routes, class names or setting
+names appear in the files Cloudflare serves publicly (`dist/client`). It also warns if a public page looks like it
+shows a price. The sitemap and `robots.txt` exclude Studio.
+
+**Prices are not in this repository.** The migrations hold no package prices. Nat's price lists load from a
+private, git-ignored file with `npm run studio:seed -- --local` (or `--remote`); see `studio-seed.example.json`.
+The calendar feed's secret is generated in the database and can be replaced from Studio's Settings.
+
+**Local development.** `.dev.vars` needs `STUDIO_DEV_BYPASS=1` (copied from `.dev.vars.example`). It works only
+for a development build, on localhost, with that flag; a production build ignores it (a Playwright project proves
+it). Then `npm run dev` and open http://localhost:4321/studio. `npm run dev:cms` (the local editor mode) leaves
+Studio closed.
+
+**Tests.** `npm run test:unit` runs the real migrations on Node's built-in SQLite, so SQL, the partial unique
+index and transactions are tested as they are in production. `npm run test:e2e` drives the pages (phone width,
+touch-target size, axe accessibility, and every form) and starts a production build to prove Studio is closed
+without a sign-in.
 
 ## Reading the inquiry backup
 

@@ -1,5 +1,6 @@
 // Edits or removes one calendar item.
 import type { APIRoute } from 'astro';
+import { purgeCalendarItem, restoreCalendarItem } from '../../../../../lib/studio/admin';
 import { deleteCalendarItem, getCalendarItem, updateCalendarItem } from '../../../../../lib/studio/calendarDb';
 import { forbidden, isSameOrigin, json } from '../../../../../lib/studio/http';
 import { isId } from '../../../../../lib/studio/messages';
@@ -32,6 +33,14 @@ export const POST: APIRoute = async ({ request, url, locals, params }) => {
         if (!result.ok || !item) return redirectTo('/studio/calendar', { error: 'not-found' });
         const day = item.all_day === 1 ? item.starts_at : utcToEastern(item.starts_at).date;
         return redirectTo(`/studio/calendar/day/${day}`, { notice: 'item-removed' });
+    }
+    if (params.action === 'restore') {
+        const result = await restoreCalendarItem(db, id, { actor });
+        return result.ok ? redirectTo('/studio/deleted', { notice: 'restored' }) : redirectTo('/studio/deleted', { error: result.error });
+    }
+    if (params.action === 'purge') {
+        const result = await purgeCalendarItem(db, id, { actor });
+        return result.ok ? redirectTo('/studio/deleted', { notice: 'purged' }) : redirectTo('/studio/deleted', { error: result.error });
     }
     return json(404, { ok: false, error: 'Not found.' });
 };
