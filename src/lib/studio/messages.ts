@@ -25,6 +25,10 @@ export const NOTICES: Record<string, string> = {
     'price-shown': 'It is back on the list.',
     'file-added': 'File saved.',
     'file-removed': 'File removed. It is kept for 30 days in case you need it back.',
+    'item-added': 'Added to your calendar.',
+    'item-saved': 'Calendar item saved.',
+    'item-removed': 'Calendar item removed.',
+    'feed-reset': 'Done. Your old calendar link has stopped working. Use the new one below.',
 };
 
 export const ERRORS: Record<string, string> = {
@@ -75,6 +79,12 @@ export const FIELD_LABELS: Record<string, string> = {
     price: 'Price',
     details: "What's included",
     sort_order: 'Order',
+    type: 'Kind',
+    lead_id: 'Client',
+    title: 'Title',
+    date: 'Date',
+    start_time: 'Start time',
+    end_time: 'End time',
 };
 
 /** Extras are named extra_<id> in the booking form. */

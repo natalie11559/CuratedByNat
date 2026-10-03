@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { LeadRow } from '../../src/lib/studio/queries.ts';
 import { bannerFrom } from '../../src/lib/studio/messages.ts';
+import { buildCalendarEntries } from '../../src/lib/studio/calendar.ts';
 import { buildToday, quietLabel } from '../../src/lib/studio/today.ts';
 
 const today = '2026-10-10';
@@ -52,14 +53,14 @@ describe('buildToday', () => {
         const stale = lead({ first_name: 'Stale', created_at: '2026-10-01T12:00:00Z' });
         const contacted = lead({ first_name: 'Quiet', stage: 'contacted', last_contacted_at: '2026-10-02T12:00:00Z' });
         const recent = lead({ first_name: 'Recent', stage: 'contacted', last_contacted_at: '2026-10-09T12:00:00Z' });
-        const result = buildToday([fresh, stale, contacted, recent], { today, followUpDays: 5 });
+        const result = buildToday([fresh, stale, contacted, recent], { today, followUpDays: 5, entries: [] });
         assert.deepEqual(names(result.needsFollowUp), ['Stale', 'Quiet']); // most overdue first
         assert.deepEqual(names(result.newInquiries), ['Fresh']);
     });
 
     it('does not list a lead in both New and Needs follow-up', () => {
         const overdueNew = lead({ first_name: 'Old', created_at: '2026-10-01T12:00:00Z' });
-        const result = buildToday([overdueNew], { today, followUpDays: 5 });
+        const result = buildToday([overdueNew], { today, followUpDays: 5, entries: [] });
         assert.equal(result.newInquiries.length, 0);
         assert.equal(result.needsFollowUp.length, 1);
     });
@@ -71,11 +72,11 @@ describe('buildToday', () => {
             lead({ stage: 'delivered', created_at: '2026-09-01T00:00:00Z' }),
             lead({ stage: 'booked', created_at: '2026-09-01T00:00:00Z' }),
         ];
-        const result = buildToday(leads, { today, followUpDays: 5 });
+        const result = buildToday(leads, { today, followUpDays: 5, entries: [] });
         assert.deepEqual([result.needsFollowUp.length, result.newInquiries.length], [0, 0]);
     });
 
-    it('shows follow-ups and events in the coming seven days, soonest first', () => {
+    it('shows the calendar for the coming seven days, soonest first, with events under way starting today', () => {
         const leads = [
             lead({ first_name: 'FollowTomorrow', stage: 'contacted', last_contacted_at: '2026-10-09T12:00:00Z', next_follow_up_at: '2026-10-11' }),
             lead({ first_name: 'FollowLater', stage: 'contacted', last_contacted_at: '2026-10-09T12:00:00Z', next_follow_up_at: '2026-10-17' }),
@@ -86,16 +87,26 @@ describe('buildToday', () => {
             lead({ first_name: 'EventOver', stage: 'booked', event_date: '2026-10-01', end_date: '2026-10-02' }),
             lead({ first_name: 'InquiryWithDate', stage: 'new', event_date: '2026-10-12' }),
         ];
-        const result = buildToday(leads, { today, followUpDays: 5 });
+        const entries = buildCalendarEntries({ leads, items: [] });
+        const result = buildToday(leads, { today, followUpDays: 5, entries });
         assert.deepEqual(
-            result.thisWeek.map((item) => [item.lead.first_name, item.kind, item.date]),
+            result.thisWeek.map((item) => [item.entry.title, item.entry.type, item.date]),
             [
-                ['WeekendAwayNow', 'event', '2026-10-10'],
-                ['FollowTomorrow', 'follow-up', '2026-10-11'],
-                ['Wedding', 'event', '2026-10-17'],
-                ['FollowLater', 'follow-up', '2026-10-17'],
+                ["WeekendAwayNow's event", 'event', '2026-10-10'],
+                ['Follow up with FollowTomorrow', 'follow_up', '2026-10-11'],
+                ['Deliver content to WeekendAwayNow', 'delivery', '2026-10-12'],
+                ["Wedding's event", 'event', '2026-10-17'],
+                ['Follow up with FollowLater', 'follow_up', '2026-10-17'],
             ],
         );
+    });
+
+    it('leaves a follow-up that is already due to the Needs follow-up list', () => {
+        const due = lead({ first_name: 'Due', stage: 'contacted', last_contacted_at: '2026-10-09T12:00:00Z', next_follow_up_at: '2026-10-10' });
+        const entries = buildCalendarEntries({ leads: [due], items: [] });
+        const result = buildToday([due], { today, followUpDays: 5, entries });
+        assert.deepEqual(names(result.needsFollowUp), ['Due']);
+        assert.equal(result.thisWeek.length, 0);
     });
 });
 

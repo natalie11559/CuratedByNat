@@ -1,0 +1,47 @@
+---
+// Add something to the calendar. Arrive from a lead's page and the client is already chosen.
+import CalendarItemForm from '../../../components/studio/CalendarItemForm.astro';
+import Notice from '../../../components/studio/Notice.astro';
+import StudioLayout from '../../../layouts/StudioLayout.astro';
+import { CALENDAR_TYPES } from '../../../lib/studio/calendar';
+import { isIsoDate } from '../../../lib/studio/dates';
+import { leadOptions } from '../../../lib/studio/leadOptions';
+import { isId } from '../../../lib/studio/messages';
+import { getLead, listLeads } from '../../../lib/studio/queries';
+import { studioDb } from '../../../lib/studio/server';
+
+export const prerender = false;
+
+const db = studioDb();
+if (!db) return Astro.redirect('/studio?error=database-missing', 303);
+
+const params = Astro.url.searchParams;
+const requestedDate = params.get('date') ?? '';
+const requestedLead = params.get('lead');
+const requestedType = params.get('type') ?? '';
+const leads = await listLeads(db, {}, 300);
+const options = leadOptions(leads);
+// A client picked from their own page is offered even if they are in a stage the list normally leaves out.
+const picked = isId(requestedLead) ? await getLead(db, requestedLead) : null;
+if (picked && !options.some((option) => option.id === picked.id)) options.push({ id: picked.id, label: `${picked.first_name} ${picked.last_name}`.trim() });
+---
+
+<StudioLayout title="Add to calendar" current="calendar">
+    <p class="st-eyebrow">Calendar</p>
+    <h1 class="st-title">Add to calendar</h1>
+    <Notice />
+    <section class="st-card" aria-label="Calendar item details">
+        <CalendarItemForm
+            action="/api/studio/calendar"
+            returnTo="/studio/calendar/new"
+            leads={options}
+            defaults={{
+                date: isIsoDate(requestedDate) ? requestedDate : requestedDate.length === 7 ? `${requestedDate}-01` : '',
+                leadId: picked?.id,
+                type: CALENDAR_TYPES.some((entry) => entry.id === requestedType) ? requestedType : 'consultation',
+            }}
+            submitLabel="Add to calendar"
+            idPrefix="new"
+        />
+    </section>
+</StudioLayout>

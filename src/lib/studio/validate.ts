@@ -1,8 +1,10 @@
 // Checks what Nat types into Studio's forms. Every API route runs the same checks on the server, whatever the
 // browser did. Messages are short and kind, because they show up as a banner on a phone.
 import { isValidEmail } from '../inquiry/validate.ts';
+import { CALENDAR_TYPES, type CalendarType } from './calendar.ts';
 import { addDays, isIsoDate } from './dates.ts';
 import { parseDollars, PAYMENT_METHODS, suggestedTotal, type PaymentMethod } from './money.ts';
+import { easternToUtc } from './tz.ts';
 import { CELEBRATING, SOURCES, type CelebratingId, type SourceId } from './vocab.ts';
 
 export type RawInput = Record<string, string | string[] | undefined>;
@@ -309,4 +311,74 @@ export function validatePriceListItem(raw: RawInput): Checked<PriceListInput> {
         ok: true,
         value: { name, priceCents: priceCents!, details, sortOrder, active: str(raw, 'active') !== '0' },
     };
+}
+
+// ---- Calendar items ----------------------------------------------------------------------------------
+
+/** A calendar item ready to save. */
+export interface CalendarItemInput {
+    type: CalendarType;
+    title: string;
+    leadId: string | null;
+    /** All-day: YYYY-MM-DD. Timed: a UTC moment. */
+    startsAt: string;
+    endsAt: string | null;
+    allDay: boolean;
+    location: string;
+    notes: string;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Reads the calendar item form. Times are typed in Eastern time. A title is needed unless the item is about a client,
+ * in which case it defaults to something like "Consultation with Ava".
+ */
+export function validateCalendarItem(raw: RawInput): Checked<CalendarItemInput> {
+    const errors: Errors = {};
+
+    const type = str(raw, 'type') as CalendarType;
+    if (!CALENDAR_TYPES.some((entry) => entry.id === type)) errors.type = 'Pick what kind of item it is.';
+
+    const leadId = str(raw, 'lead_id') || null;
+    if (leadId && !UUID.test(leadId)) errors.lead_id = 'Pick someone from the list.';
+
+    const title = str(raw, 'title');
+    if (tooLong(title, 120)) errors.title = 'That title is too long.';
+    if (!title && !leadId) errors.title = 'Give it a title.';
+
+    const date = str(raw, 'date');
+    if (!isIsoDate(date)) errors.date = 'Pick a date.';
+
+    const allDay = str(raw, 'all_day') === '1' || str(raw, 'all_day') === 'on';
+    const endDate = str(raw, 'end_date') || null;
+    if (endDate && !isIsoDate(endDate)) errors.end_date = "That date doesn't look right.";
+    if (endDate && !errors.date && !errors.end_date && endDate < date) errors.end_date = 'The end date comes before the start.';
+
+    let startsAt = date;
+    let endsAt: string | null = null;
+    if (allDay) {
+        endsAt = endDate && endDate !== date ? endDate : null;
+    } else if (!errors.date) {
+        const startTime = str(raw, 'start_time');
+        const start = easternToUtc(date, startTime);
+        if (!start) errors.start_time = 'Pick a start time.';
+        else startsAt = start.toISOString();
+
+        const endTime = str(raw, 'end_time');
+        if (endTime && !errors.end_date) {
+            const end = easternToUtc(endDate ?? date, endTime);
+            if (!end) errors.end_time = "That time doesn't look right.";
+            else if (start && end <= start) errors.end_time = 'The end comes before the start.';
+            else endsAt = end.toISOString();
+        }
+    }
+
+    const location = str(raw, 'location');
+    if (tooLong(location, 200)) errors.location = 'That is too long.';
+    const notes = str(raw, 'notes');
+    if (tooLong(notes, 5000)) errors.notes = 'Those notes are too long.';
+
+    if (Object.keys(errors).length > 0) return { ok: false, errors };
+    return { ok: true, value: { type, title, leadId, startsAt, endsAt, allDay, location, notes } };
 }

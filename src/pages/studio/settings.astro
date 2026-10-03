@@ -5,6 +5,7 @@ import PriceListForm from '../../components/studio/PriceListForm.astro';
 import StudioLayout from '../../layouts/StudioLayout.astro';
 import { listExtras, listPackages, packageDetails } from '../../lib/studio/bookings';
 import { formatCents } from '../../lib/studio/money';
+import { getFeedToken } from '../../lib/studio/calendarDb';
 import { studioDb } from '../../lib/studio/server';
 
 export const prerender = false;
@@ -12,6 +13,8 @@ export const prerender = false;
 const db = studioDb();
 if (!db) return Astro.redirect('/studio?error=database-missing', 303);
 const [packages, extras] = await Promise.all([listPackages(db, { includeInactive: true }), listExtras(db, { includeInactive: true })]);
+const feedUrl = `${Astro.url.origin}/cal/${await getFeedToken(db)}.ics`;
+const webcalUrl = feedUrl.replace(/^https?:/, 'webcal:');
 const kinds = [
     { kind: 'package' as const, title: 'Packages', items: packages, empty: 'No packages yet. Add the first one below.' },
     { kind: 'extra' as const, title: 'Extras', items: extras, empty: 'No extras yet.' },
@@ -22,6 +25,47 @@ const kinds = [
     <p class="st-eyebrow">Studio</p>
     <h1 class="st-title">Settings</h1>
     <Notice />
+
+    <section class="st-card" id="calendar-feed" aria-labelledby="feed-heading">
+        <h2 class="st-card__title" id="feed-heading">Calendar on your phone</h2>
+        <p>Add this once and your events, consultations and follow-ups show up in your phone's own calendar app. It only goes one way: Studio to your phone.</p>
+        <p class="st-callout">The calendar shows first names, what kind of item it is, the time and the city. No phone numbers, emails, notes or money. Anyone with this link can see it, so keep it private.</p>
+
+        <div class="st-field">
+            <label class="st-label" for="feed-url">Your private calendar link</label>
+            <input class="st-input" id="feed-url" type="text" readonly value={feedUrl} />
+        </div>
+        <div class="st-actions st-actions--spaced">
+            <button class="st-button st-button--secondary st-js-only" type="button" data-copy-from="feed-url" data-copy-status="feed-copy-status">Copy link</button>
+            <a class="st-button st-button--primary" href={webcalUrl}>Add to iPhone Calendar</a>
+        </div>
+        <p class="st-hint" id="feed-copy-status" aria-live="polite"></p>
+
+        <h3 class="st-subtitle">On an iPhone</h3>
+        <ol class="st-steps">
+            <li>Open Studio on your iPhone and tap <strong>Add to iPhone Calendar</strong> above.</li>
+            <li>Tap <strong>Subscribe</strong>, then <strong>Add</strong>.</li>
+            <li>New things show up on their own, usually within an hour.</li>
+        </ol>
+        <p class="st-hint">Or: Settings, Calendar, Accounts, Add Account, Other, Add Subscribed Calendar, then paste the link.</p>
+
+        <h3 class="st-subtitle">In Google Calendar</h3>
+        <ol class="st-steps">
+            <li>On a computer, open calendar.google.com.</li>
+            <li>Next to <strong>Other calendars</strong>, click the plus, then <strong>From URL</strong>.</li>
+            <li>Paste your link and click <strong>Add calendar</strong>. Google can take several hours to show changes.</li>
+        </ol>
+
+        <details class="st-details st-details--danger">
+            <summary class="st-details__summary">Make a new link</summary>
+            <form class="st-form" method="post" action="/api/studio/settings/calendar-feed">
+                <p>Do this if the link was shared by mistake. The old link stops working straight away, and your phone's calendar will go quiet until you add the new link the same way as above.</p>
+                <div class="st-actions">
+                    <button class="st-button st-button--danger" type="submit">Make a new link</button>
+                </div>
+            </form>
+        </details>
+    </section>
 
     <p class="st-hint">Travel fees may apply for locations outside the local service area. Add a travel fee to a booking when it applies.</p>
 

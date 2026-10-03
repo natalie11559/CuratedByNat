@@ -1,0 +1,14 @@
+---
+import { CALENDAR_TYPES } from '../../lib/studio/calendar';
+---
+
+<ul class="st-legend" role="list" aria-label="What the shapes mean">
+    {
+        CALENDAR_TYPES.map((type) => (
+            <li class="st-legend__item">
+                <span class:list={['st-dot', `st-dot--${type.id}`]} aria-hidden="true"></span>
+                {type.label}
+            </li>
+        ))
+    }
+</ul>

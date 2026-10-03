@@ -1,0 +1,23 @@
+---
+// One calendar entry in a list: when, what kind of thing it is (in words, never only a colour), and who it is for.
+import { calendarTypeLabel, type CalendarEntry } from '../../lib/studio/calendar';
+import { formatClock } from '../../lib/studio/tz';
+
+interface Props {
+    entry: CalendarEntry;
+    /** Show the date too, for lists that span several days. */
+    showDate?: boolean;
+}
+
+const { entry } = Astro.props;
+const href = entry.itemId ? `/studio/calendar/items/${entry.itemId}` : entry.leadId ? `/studio/leads/${entry.leadId}` : '/studio/calendar';
+const when = entry.allDay ? 'All day' : `${formatClock(entry.startTime!)}${entry.endTime ? ` to ${formatClock(entry.endTime)}` : ''}`;
+---
+
+<a class="st-entry" href={href}>
+    <span class:list={['st-dot', `st-dot--${entry.type}`]} aria-hidden="true"></span>
+    <span class="st-entry__main">
+        <span class="st-entry__title">{entry.title}</span>
+        <span class="st-entry__sub">{calendarTypeLabel(entry.type)} · {when}{entry.location ? ` · ${entry.location}` : ''}</span>
+    </span>
+</a>

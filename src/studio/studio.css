@@ -1127,3 +1127,241 @@ html {
     padding: var(--space-2) var(--space-3);
     font-size: 15px;
 }
+
+/* ---- Calendar -------------------------------------------------------------------------------------- */
+
+.st-js-only {
+    display: none;
+}
+
+.st-js .st-js-only {
+    display: inline-flex;
+}
+
+.st-actions--spaced {
+    margin-top: var(--space-4);
+}
+
+.st-steps {
+    margin: 0 0 var(--space-3);
+    padding-left: var(--space-6);
+}
+
+.st-steps li {
+    margin-bottom: var(--space-2);
+}
+
+.st-monthnav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+
+/* The shapes differ as well as the colours, so the kinds can be told apart without seeing colour. */
+.st-dot {
+    display: inline-block;
+    flex: none;
+    width: 12px;
+    height: 12px;
+    background: var(--color-button);
+    border-radius: var(--radius-full);
+}
+
+.st-dot--consultation {
+    background: var(--color-accent-text);
+    border-radius: 2px;
+}
+
+.st-dot--follow_up {
+    background: var(--color-accent);
+    border-radius: 0;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.st-dot--delivery {
+    background: var(--color-success);
+    border-radius: 0;
+    transform: rotate(45deg) scale(0.85);
+}
+
+.st-dot--personal {
+    background: transparent;
+    border: 2px solid var(--color-text-muted);
+}
+
+.st-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-5);
+    list-style: none;
+    margin: var(--space-3) 0 0;
+    padding: 0;
+    font-size: 14px;
+    color: var(--color-text-muted);
+}
+
+.st-legend__item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.st-month {
+    display: grid;
+    border: var(--border-hairline);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    overflow: hidden;
+}
+
+.st-month__row {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.st-month__weekday {
+    padding: var(--space-2) 0;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    border-bottom: var(--border-hairline);
+}
+
+.st-body .st-month__day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-1);
+    min-height: 56px;
+    padding: var(--space-2) 0;
+    border-right: var(--border-hairline);
+    border-bottom: var(--border-hairline);
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.st-month__row > div:last-child .st-month__day {
+    border-right: 0;
+}
+
+.st-body .st-month__day--outside {
+    color: var(--color-text-muted);
+    background: var(--color-bg);
+}
+
+.st-month__number {
+    display: grid;
+    place-items: center;
+    min-width: 28px;
+    height: 28px;
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.st-body .st-month__day--today .st-month__number {
+    background: var(--color-button);
+    color: var(--color-on-dark);
+}
+
+.st-month__dots {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+    min-height: 12px;
+}
+
+.st-month__dots .st-dot {
+    width: 9px;
+    height: 9px;
+}
+
+.st-agenda__day {
+    margin-bottom: var(--space-5);
+}
+
+.st-agenda__date a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+}
+
+.st-agenda__date {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin: 0 0 var(--space-2);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.st-entries {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-2);
+}
+
+.st-body .st-entry {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 56px;
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-hairline);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.st-entry__main {
+    display: grid;
+    min-width: 0;
+}
+
+.st-entry__title {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.st-entry__sub {
+    font-size: 14px;
+    color: var(--color-text-muted);
+}
+
+.st-choices {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-3);
+}
+
+.st-body .st-choice {
+    display: grid;
+    gap: var(--space-1);
+    padding: var(--space-5);
+    border: var(--border-hairline);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.st-choice__title {
+    font-family: var(--font-heading);
+    font-size: 22px;
+}
+
+.st-choice__sub {
+    color: var(--color-text-muted);
+}

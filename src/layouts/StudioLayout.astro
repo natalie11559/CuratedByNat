@@ -1,10 +1,11 @@
 ---
 // The frame around every Studio page: header, navigation (bottom tabs on phones, a side column on
-// laptops) and the content. No <style> or <script> blocks here or in any Studio page: Astro would
-// publish them as public files. Styles come from /studio/app.css (src/studio/studio.css), a guarded route.
+// laptops) and the content. Studio pages never carry their own style or script blocks, because Astro would
+// publish those as public files. Styles and the small script come from guarded routes instead
+// (/studio/app.css from src/studio/studio.css, /studio/app.js from src/studio/client.js).
 import { firstNameFromEmail } from '../lib/studio/people';
 
-export type StudioSection = 'home' | 'pipeline' | 'settings';
+export type StudioSection = 'home' | 'pipeline' | 'calendar' | 'settings';
 
 interface Props {
     title: string;
@@ -19,6 +20,7 @@ const user = Astro.locals.studioUser;
 const navigation: { id: StudioSection; label: string; href: string }[] = [
     { id: 'home', label: 'Home', href: '/studio' },
     { id: 'pipeline', label: 'Pipeline', href: '/studio/pipeline' },
+    { id: 'calendar', label: 'Calendar', href: '/studio/calendar' },
     { id: 'settings', label: 'Settings', href: '/studio/settings' },
 ];
 ---
@@ -34,6 +36,7 @@ const navigation: { id: StudioSection; label: string; href: string }[] = [
         <link rel="icon" href="/favicon-32x32.png" sizes="32x32" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="stylesheet" href="/studio/app.css" />
+        <script src="/studio/app.js" defer></script>
     </head>
     <body class="st-body">
         <a class="st-skip" href="#main">Skip to content</a>
@@ -72,7 +75,7 @@ const navigation: { id: StudioSection; label: string; href: string }[] = [
             <main id="main" class:list={['st-main', wide && 'st-main--wide']} tabindex="-1">
                 <slot />
             </main>
-            <a class="st-fab" href="/studio/leads/new" aria-label="Add a lead">
+            <a class="st-fab" href="/studio/add" aria-label="Add">
                 <span aria-hidden="true">+</span>
             </a>
         </div>

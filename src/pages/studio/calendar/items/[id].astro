@@ -1,0 +1,43 @@
+---
+// Change or remove a calendar item.
+import CalendarItemForm from '../../../../components/studio/CalendarItemForm.astro';
+import Notice from '../../../../components/studio/Notice.astro';
+import StudioLayout from '../../../../layouts/StudioLayout.astro';
+import { calendarTypeLabel } from '../../../../lib/studio/calendar';
+import { getCalendarItem } from '../../../../lib/studio/calendarDb';
+import { leadOptions } from '../../../../lib/studio/leadOptions';
+import { isId } from '../../../../lib/studio/messages';
+import { getLead, listLeads } from '../../../../lib/studio/queries';
+import { studioDb } from '../../../../lib/studio/server';
+
+export const prerender = false;
+
+const db = studioDb();
+const id = Astro.params.id ?? '';
+if (!db || !isId(id)) return Astro.redirect('/studio/calendar?error=not-found', 303);
+const item = await getCalendarItem(db, id);
+if (!item) return Astro.redirect('/studio/calendar?error=not-found', 303);
+
+const options = leadOptions(await listLeads(db, {}, 300));
+const lead = item.lead_id ? await getLead(db, item.lead_id) : null;
+if (lead && !options.some((option) => option.id === lead.id)) options.push({ id: lead.id, label: `${lead.first_name} ${lead.last_name}`.trim() });
+---
+
+<StudioLayout title={calendarTypeLabel(item.type)} current="calendar">
+    <p class="st-eyebrow">{calendarTypeLabel(item.type)}</p>
+    <h1 class="st-title">{item.title || (lead ? `${calendarTypeLabel(item.type)} with ${lead.first_name}` : calendarTypeLabel(item.type))}</h1>
+    <Notice />
+    {lead && <p class="st-linkrow"><a href={`/studio/leads/${lead.id}`}>Open {lead.first_name}'s page</a></p>}
+    <section class="st-card" aria-label="Calendar item details">
+        <CalendarItemForm action={`/api/studio/calendar/${id}/update`} leads={options} item={item} submitLabel="Save changes" idPrefix="edit" />
+    </section>
+    <details class="st-details st-details--danger">
+        <summary class="st-details__summary">Remove from calendar</summary>
+        <form class="st-form" method="post" action={`/api/studio/calendar/${id}/delete`}>
+            <p>This takes it off your calendar and your phone.</p>
+            <div class="st-actions">
+                <button class="st-button st-button--danger" type="submit">Remove</button>
+            </div>
+        </form>
+    </details>
+</StudioLayout>

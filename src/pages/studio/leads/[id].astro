@@ -10,8 +10,10 @@ import LeadForm from '../../../components/studio/LeadForm.astro';
 import StagePill from '../../../components/studio/StagePill.astro';
 import StudioLayout from '../../../layouts/StudioLayout.astro';
 import { getBookingsForLead, listExtras, listPackages } from '../../../lib/studio/bookings';
-import { formatDate, formatDateRange, formatTimestamp, relativeDays, todayEastern } from '../../../lib/studio/dates';
+import { formatDate, formatDateRange, formatShortDate, formatTimestamp, relativeDays, todayEastern } from '../../../lib/studio/dates';
 import { hasSignedContract, listFiles } from '../../../lib/studio/files';
+import { calendarTypeLabel } from '../../../lib/studio/calendar';
+import { loadCalendar } from '../../../lib/studio/calendarDb';
 import { followUpStatus } from '../../../lib/studio/followup';
 import { isId } from '../../../lib/studio/messages';
 import { celebratingOf, fullName, getLead, getSettings, listActivities, listInquiriesForLead } from '../../../lib/studio/queries';
@@ -27,7 +29,7 @@ if (!db || !isId(id)) return Astro.redirect('/studio/pipeline?error=not-found', 
 const lead = await getLead(db, id, { includeDeleted: true });
 if (!lead) return Astro.redirect('/studio/pipeline?error=not-found', 303);
 
-const [activities, inquiries, settings, bookings, packages, extras, files, contractOnFile] = await Promise.all([
+const [activities, inquiries, settings, bookings, packages, extras, files, contractOnFile, calendar] = await Promise.all([
     listActivities(db, id),
     listInquiriesForLead(db, id),
     getSettings(db),
@@ -36,7 +38,9 @@ const [activities, inquiries, settings, bookings, packages, extras, files, contr
     listExtras(db),
     listFiles(db, id),
     hasSignedContract(db, id),
+    loadCalendar(db),
 ]);
+const upcoming = calendar.filter((entry) => entry.leadId === id && entry.endDate >= todayEastern());
 const today = todayEastern();
 const followUp = followUpStatus(lead, { followUpDays: settings.followUpDays, today });
 const name = fullName(lead);
@@ -217,6 +221,37 @@ const details: [string, string][] = [
             </section>
         )
     }
+
+    <section class="st-card" aria-labelledby="calendar-heading">
+        <h2 id="calendar-heading" class="st-card__title">Calendar</h2>
+        {
+            upcoming.length === 0 ? (
+                <p class="st-quiet">Nothing coming up for {lead.first_name} yet.</p>
+            ) : (
+                <ul class="st-rows" role="list">
+                    {upcoming.map((entry) => (
+                        <li>
+                            <a class="st-row" href={entry.itemId ? `/studio/calendar/items/${entry.itemId}` : `/studio/calendar/day/${entry.date}`}>
+                                <span class="st-row__date">{formatShortDate(entry.date)}</span>
+                                <span class="st-row__main">
+                                    <span class="st-row__title">{entry.title}</span>
+                                    <span class="st-row__sub">{calendarTypeLabel(entry.type)}</span>
+                                </span>
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            )
+        }
+        {
+            !isDeleted && (
+                <div class="st-actions st-actions--spaced">
+                    <a class="st-button st-button--secondary" href={`/studio/calendar/new?lead=${id}&type=consultation`}>Schedule a consultation</a>
+                    <a class="st-button st-button--secondary" href={`/studio/calendar/new?lead=${id}&type=follow_up`}>Add a reminder</a>
+                </div>
+            )
+        }
+    </section>
 
     <FilesCard leadId={id} files={files} canUpload={!isDeleted} />
 

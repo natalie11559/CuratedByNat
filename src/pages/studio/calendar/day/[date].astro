@@ -1,0 +1,54 @@
+---
+// One day: what is on it, and a way to add something.
+import CalendarItemForm from '../../../../components/studio/CalendarItemForm.astro';
+import EntryRow from '../../../../components/studio/EntryRow.astro';
+import Notice from '../../../../components/studio/Notice.astro';
+import StudioLayout from '../../../../layouts/StudioLayout.astro';
+import { entriesByDay } from '../../../../lib/studio/calendar';
+import { loadCalendar } from '../../../../lib/studio/calendarDb';
+import { addDays, formatDate, isIsoDate, relativeDays, todayEastern } from '../../../../lib/studio/dates';
+import { listLeads } from '../../../../lib/studio/queries';
+import { studioDb } from '../../../../lib/studio/server';
+import { leadOptions } from '../../../../lib/studio/leadOptions';
+
+export const prerender = false;
+
+const db = studioDb();
+const date = Astro.params.date ?? '';
+if (!db || !isIsoDate(date)) return Astro.redirect('/studio/calendar?error=not-found', 303);
+
+const today = todayEastern();
+const [entries, leads] = await Promise.all([loadCalendar(db), listLeads(db, {}, 300)]);
+const todays = entriesByDay(entries, date, date).get(date) ?? [];
+const weekday = new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
+---
+
+<StudioLayout title={formatDate(date)} current="calendar">
+    <p class="st-eyebrow">{relativeDays(date, today)}</p>
+    <h1 class="st-title">{weekday}, {formatDate(date).replace(/, \d{4}$/, '')}</h1>
+    <Notice />
+
+    <nav class="st-monthnav" aria-label="Days">
+        <a class="st-button st-button--secondary" href={`/studio/calendar/day/${addDays(date, -1)}`}><span aria-hidden="true">←</span><span class="st-visually-hidden">Previous day</span></a>
+        <a class="st-button st-button--quiet" href={`/studio/calendar?month=${date.slice(0, 7)}`}>Back to the month</a>
+        <a class="st-button st-button--secondary" href={`/studio/calendar/day/${addDays(date, 1)}`}><span class="st-visually-hidden">Next day</span><span aria-hidden="true">→</span></a>
+    </nav>
+
+    <section class="st-section" aria-labelledby="day-heading">
+        <h2 class="st-section-title" id="day-heading">On this day</h2>
+        {
+            todays.length === 0 ? (
+                <p class="st-quiet">Nothing planned. A free day.</p>
+            ) : (
+                <ul class="st-entries" role="list">
+                    {todays.map((entry) => <li><EntryRow entry={entry} /></li>)}
+                </ul>
+            )
+        }
+    </section>
+
+    <section class="st-card" aria-labelledby="add-heading">
+        <h2 class="st-card__title" id="add-heading">Add something on this day</h2>
+        <CalendarItemForm action="/api/studio/calendar" returnTo={`/studio/calendar/day/${date}`} leads={leadOptions(leads)} defaults={{ date }} submitLabel="Add to calendar" idPrefix="day" />
+    </section>
+</StudioLayout>

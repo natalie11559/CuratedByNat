@@ -8,7 +8,9 @@ test.describe('Adding and working a lead', () => {
     test('adds a lead from the + button and shows its details', async ({ page }) => {
         const first = unique('Ava');
         await page.goto('/studio');
-        await page.getByRole('link', { name: 'Add a lead' }).click();
+        await page.getByRole('link', { name: 'Add', exact: true }).click();
+        await expect(page).toHaveURL(/\/studio\/add$/);
+        await page.getByRole('link', { name: /^A lead/ }).click();
         await expect(page).toHaveURL(/\/studio\/leads\/new$/);
 
         await page.getByLabel('First name').fill(first);
