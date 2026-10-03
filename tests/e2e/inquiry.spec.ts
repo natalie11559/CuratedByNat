@@ -1,8 +1,28 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test as base, type Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+
+// Each test posts from its own made-up visitor address, so the form's rate limit (5 a minute per visitor) never
+// depends on how many other tests ran a moment ago. Cloudflare sets this header itself in production. It is
+// added only to our own /api/inquiry requests: sent everywhere it would break the cross-origin Turnstile script.
+const test = base.extend<{ visitor: string }>({
+    visitor: async ({}, use) => {
+        await use(`198.51.100.${Math.floor(Math.random() * 250) + 1}`);
+    },
+    page: async ({ page, visitor }, use) => {
+        await page.route('**/api/inquiry', (route) =>
+            route.continue({ headers: { ...route.request().headers(), 'cf-connecting-ip': visitor } }),
+        );
+        await use(page);
+    },
+    request: async ({ playwright, baseURL, visitor }, use) => {
+        const context = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { 'CF-Connecting-IP': visitor } });
+        await use(context);
+        await context.dispose();
+    },
+});
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const copy = JSON.parse(readFileSync(`${repoRoot}src/content/inquiry-form.json`, 'utf8'));
@@ -22,23 +42,51 @@ interface InquiryRow {
     payload: string;
 }
 
-/** Reads the local D1 database the dev server writes to. */
+/**
+ * Runs a read-only query against the local D1 database the dev server writes to. Several tests do this at
+ * once and SQLite briefly locks the file, so a failed attempt is simply tried again.
+ */
+function queryLocalD1<T>(sql: string): T[] {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+        try {
+            const output = execFileSync(
+                'npx',
+                ['wrangler', 'd1', 'execute', 'curatedbynat-inquiries', '--local', '--json', '--command', sql],
+                { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+            );
+            return JSON.parse(output)[0].results;
+        } catch (error) {
+            lastError = error;
+            execFileSync('sleep', ['0.5']);
+        }
+    }
+    throw lastError;
+}
+
 function inquiriesFor(email: string): InquiryRow[] {
-    const output = execFileSync(
-        'npx',
-        [
-            'wrangler',
-            'd1',
-            'execute',
-            'curatedbynat-inquiries',
-            '--local',
-            '--json',
-            '--command',
-            `SELECT email, first_name, celebrating, event_date, end_date, email_status, payload FROM inquiries WHERE email = '${email}'`,
-        ],
-        { cwd: repoRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    return queryLocalD1<InquiryRow>(
+        `SELECT email, first_name, celebrating, event_date, end_date, email_status, payload FROM inquiries WHERE email = '${email}'`,
     );
-    return JSON.parse(output)[0].results;
+}
+
+interface LeadRow {
+    id: string;
+    first_name: string;
+    stage: string;
+    source: string;
+    event_date: string | null;
+    end_date: string | null;
+    inquiries: number;
+}
+
+/** The Studio leads the dev server created. */
+function leadsFor(email: string): LeadRow[] {
+    return queryLocalD1<LeadRow>(
+        `SELECT l.id, l.first_name, l.stage, l.source, l.event_date, l.end_date,
+                (SELECT COUNT(*) FROM lead_inquiries li WHERE li.lead_id = l.id) AS inquiries
+         FROM leads l WHERE l.email_key = lower('${email}')`,
+    );
 }
 
 function uniqueEmail(label: string) {
@@ -234,6 +282,11 @@ test.describe('Inquiry form', () => {
             inGeorgia: 'yes',
             excitedAbout: 'The first look <3 & the toasts',
         });
+
+        // The inquiry also became a lead in Studio's pipeline.
+        expect(leadsFor(email)).toMatchObject([
+            { first_name: 'Playwright', stage: 'new', source: 'website', event_date: '2027-06-06', end_date: '2027-06-08', inquiries: 1 },
+        ]);
     });
 
     test('silently drops a submission with the honeypot filled', async ({ page }) => {
@@ -422,6 +475,25 @@ test.describe('Inquiry API', () => {
         });
         expect(failed.status()).toBe(303);
         expect(failed.headers().location).toBe('/inquire?status=error');
+    });
+
+    test('adds each inquiry to Studio, and a second one from the same address joins the same lead', async ({ request }) => {
+        const payload = validPayload();
+        const first = await request.post('/api/inquiry', { data: payload });
+        expect(first.status()).toBe(200);
+        expect(leadsFor(payload.email)).toMatchObject([{ first_name: 'Api', stage: 'new', source: 'website', inquiries: 1 }]);
+
+        const again = await request.post('/api/inquiry', {
+            data: { ...payload, email: payload.email.toUpperCase(), firstName: 'Api again', startedAt: Date.now() - 60_000, submittedAt: Date.now() },
+        });
+        expect(again.status()).toBe(200);
+        expect(await again.json()).toEqual({ ok: true });
+
+        const leads = leadsFor(payload.email);
+        expect(leads).toHaveLength(1);
+        expect(leads[0]).toMatchObject({ first_name: 'Api', inquiries: 2 });
+        expect(inquiriesFor(payload.email)).toHaveLength(1);
+        expect(inquiriesFor(payload.email.toUpperCase())).toHaveLength(1);
     });
 
     test('only takes POST requests of a sensible size', async ({ request }) => {
