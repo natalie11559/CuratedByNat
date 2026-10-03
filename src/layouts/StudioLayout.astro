@@ -4,17 +4,22 @@
 // publish them as public files. Styles come from /studio/app.css (src/studio/studio.css), a guarded route.
 import { firstNameFromEmail } from '../lib/studio/people';
 
-export type StudioSection = 'home';
+export type StudioSection = 'home' | 'pipeline';
 
 interface Props {
     title: string;
     current?: StudioSection;
+    /** Lets the page use the full width, for the pipeline board. */
+    wide?: boolean;
 }
 
-const { title, current = 'home' } = Astro.props;
+const { title, current = 'home', wide = false } = Astro.props;
 const user = Astro.locals.studioUser;
 
-const navigation: { id: StudioSection; label: string; href: string }[] = [{ id: 'home', label: 'Home', href: '/studio' }];
+const navigation: { id: StudioSection; label: string; href: string }[] = [
+    { id: 'home', label: 'Home', href: '/studio' },
+    { id: 'pipeline', label: 'Pipeline', href: '/studio/pipeline' },
+];
 ---
 
 <!doctype html>
@@ -38,14 +43,17 @@ const navigation: { id: StudioSection; label: string; href: string }[] = [{ id: 
                     <span class="st-brand__name">Curated by Nat</span>
                     <span class="st-brand__script">Studio</span>
                 </a>
-                {
-                    user && (
-                        <p class="st-header__user">
-                            <span class="st-visually-hidden">Signed in as </span>
-                            {firstNameFromEmail(user.email)}
-                        </p>
-                    )
-                }
+                <div class="st-header__actions">
+                    <a class="st-header__link" href="/studio/search">Search</a>
+                    {
+                        user && (
+                            <p class="st-header__user">
+                                <span class="st-visually-hidden">Signed in as </span>
+                                {firstNameFromEmail(user.email)}
+                            </p>
+                        )
+                    }
+                </div>
             </header>
             <nav class="st-nav" aria-label="Studio">
                 <ul class="st-nav__list">
@@ -60,9 +68,12 @@ const navigation: { id: StudioSection; label: string; href: string }[] = [{ id: 
                     }
                 </ul>
             </nav>
-            <main id="main" class="st-main" tabindex="-1">
+            <main id="main" class:list={['st-main', wide && 'st-main--wide']} tabindex="-1">
                 <slot />
             </main>
+            <a class="st-fab" href="/studio/leads/new" aria-label="Add a lead">
+                <span aria-hidden="true">+</span>
+            </a>
         </div>
     </body>
 </html>

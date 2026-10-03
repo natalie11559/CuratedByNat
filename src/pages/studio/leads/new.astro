@@ -1,0 +1,18 @@
+---
+// Add a lead by hand: someone who messaged on Instagram or TikTok, a referral, a planner's introduction.
+import LeadForm from '../../../components/studio/LeadForm.astro';
+import Notice from '../../../components/studio/Notice.astro';
+import StudioLayout from '../../../layouts/StudioLayout.astro';
+
+export const prerender = false;
+---
+
+<StudioLayout title="Add a lead" current="pipeline">
+    <p class="st-eyebrow">New lead</p>
+    <h1 class="st-title">Add a lead</h1>
+    <Notice />
+    <p class="st-quiet">Only a first name is needed. You can fill in the rest later.</p>
+    <section class="st-card" aria-label="Lead details">
+        <LeadForm action="/api/studio/leads" submitLabel="Add lead" idPrefix="new" />
+    </section>
+</StudioLayout>

@@ -1,25 +1,129 @@
 ---
-// Studio home. The shell for now: later phases fill it with today's follow-ups, events and balances.
+// Studio home: what needs attention today.
+import LeadCard from '../../components/studio/LeadCard.astro';
+import Notice from '../../components/studio/Notice.astro';
 import StudioLayout from '../../layouts/StudioLayout.astro';
+import { formatShortDate, relativeDays, todayEastern } from '../../lib/studio/dates';
+import { countUnlinkedInquiries, syncUnlinkedInquiries } from '../../lib/studio/leads';
 import { firstNameFromEmail } from '../../lib/studio/people';
+import { celebratingOf, fullName, getSettings, listLeads } from '../../lib/studio/queries';
+import { studioDb } from '../../lib/studio/server';
+import { buildToday } from '../../lib/studio/today';
+import { celebratingLabels } from '../../lib/studio/vocab';
 
 export const prerender = false;
 
 const user = Astro.locals.studioUser;
-const today = new Intl.DateTimeFormat('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'America/New_York',
-}).format(new Date());
+const db = studioDb();
+const today = todayEastern();
+const longDate = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'America/New_York' }).format(new Date());
+
+let attention = 0;
+let overview = null as ReturnType<typeof buildToday> | null;
+let followUpDays = 5;
+let total = 0;
+
+if (db) {
+    // Website inquiries that arrived before Studio existed, or whose lead step failed, are picked up here.
+    if ((await countUnlinkedInquiries(db).catch(() => 0)) > 0) {
+        await syncUnlinkedInquiries(db, { limit: 100 }).catch(() => null);
+    }
+    attention = await countUnlinkedInquiries(db).catch(() => 0);
+    const [leads, settings] = await Promise.all([listLeads(db), getSettings(db)]);
+    followUpDays = settings.followUpDays;
+    total = leads.length;
+    overview = buildToday(leads, { today, followUpDays });
+}
 ---
 
 <StudioLayout title="Today" current="home">
-    <p class="st-eyebrow">{today}</p>
+    <p class="st-eyebrow">{longDate}</p>
     <h1 class="st-title">Hi, {user ? firstNameFromEmail(user.email) : 'there'}.</h1>
-    <section class="st-card" aria-labelledby="ready">
-        <h2 id="ready" class="st-card__title">Studio is open</h2>
-        <p>Your pipeline, calendar and clients are on their way. For now, this is just the front door.</p>
-    </section>
-    <p class="st-quiet"><a href="/cdn-cgi/access/logout">Sign out</a></p>
+    <Notice />
+
+    {
+        attention > 0 && (
+            <section class="st-card st-card--warn" aria-labelledby="attention-heading">
+                <h2 id="attention-heading" class="st-card__title">
+                    {attention} {attention === 1 ? 'inquiry needs' : 'inquiries need'} attention
+                </h2>
+                <p>{attention === 1 ? "It's" : "They're"} saved and emailed to you, but didn't become {attention === 1 ? 'a lead' : 'leads'} yet.</p>
+                <form method="post" action="/api/studio/inquiries/sync" class="st-actions">
+                    <button class="st-button st-button--primary" type="submit">Try again</button>
+                </form>
+            </section>
+        )
+    }
+
+    {!db && <p class="st-notice st-notice--error" role="alert">Studio's database isn't available right now.</p>}
+
+    {
+        overview && (
+            <>
+                <section class="st-section" aria-labelledby="followup-heading">
+                    <h2 id="followup-heading" class="st-section-title">
+                        Needs follow-up <span class="st-stagebar__count">{overview.needsFollowUp.length}</span>
+                    </h2>
+                    {overview.needsFollowUp.length === 0 ? (
+                        <p class="st-quiet">No follow-ups due. Go enjoy your coffee.</p>
+                    ) : (
+                        <ul class="st-cards" role="list">
+                            {overview.needsFollowUp.map(({ lead }) => (
+                                <li>
+                                    <LeadCard lead={lead} today={today} followUpDays={followUpDays} showStage />
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
+
+                <section class="st-section" aria-labelledby="new-heading">
+                    <h2 id="new-heading" class="st-section-title">
+                        New inquiries <span class="st-stagebar__count">{overview.newInquiries.length}</span>
+                    </h2>
+                    {overview.newInquiries.length === 0 ? (
+                        <p class="st-quiet">{total === 0 ? 'No leads yet. When someone inquires on your website, they show up here.' : 'Nobody new waiting on you.'}</p>
+                    ) : (
+                        <ul class="st-cards" role="list">
+                            {overview.newInquiries.map((lead) => (
+                                <li>
+                                    <LeadCard lead={lead} today={today} followUpDays={followUpDays} />
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
+
+                <section class="st-section" aria-labelledby="week-heading">
+                    <h2 id="week-heading" class="st-section-title">
+                        This week <span class="st-stagebar__count">{overview.thisWeek.length}</span>
+                    </h2>
+                    {overview.thisWeek.length === 0 ? (
+                        <p class="st-quiet">A quiet week so far.</p>
+                    ) : (
+                        <ul class="st-rows" role="list">
+                            {overview.thisWeek.map((item) => (
+                                <li>
+                                    <a class="st-row" href={`/studio/leads/${item.lead.id}`}>
+                                        <span class="st-row__date">
+                                            {formatShortDate(item.date)}
+                                            <span class="st-row__sub">{relativeDays(item.date, today)}</span>
+                                        </span>
+                                        <span class="st-row__main">
+                                            <span class="st-row__title">{item.kind === 'event' ? `${fullName(item.lead)}'s event` : `Follow up with ${fullName(item.lead)}`}</span>
+                                            <span class="st-row__sub">
+                                                {item.kind === 'event' ? celebratingLabels(celebratingOf(item.lead)).join(', ') || 'Event' : 'Follow-up'}
+                                            </span>
+                                        </span>
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
+            </>
+        )
+    }
+
+    <p class="st-quiet st-linkrow"><a href="/cdn-cgi/access/logout">Sign out</a></p>
 </StudioLayout>

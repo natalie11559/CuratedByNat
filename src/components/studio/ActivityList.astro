@@ -1,0 +1,43 @@
+---
+import { formatTimestamp } from '../../lib/studio/dates';
+import type { ActivityRow } from '../../lib/studio/queries';
+import { firstNameFromEmail } from '../../lib/studio/people';
+
+interface Props {
+    activities: readonly ActivityRow[];
+}
+
+const { activities } = Astro.props;
+
+const LABELS: Record<string, string> = {
+    note: 'Note',
+    call: 'Call',
+    text: 'Text',
+    email: 'Email',
+    dm: 'DM',
+    meeting: 'Meeting',
+    stage_change: 'Stage',
+    payment: 'Payment',
+    file: 'File',
+    system: 'Studio',
+};
+---
+
+{
+    activities.length === 0 ? (
+        <p class="st-quiet">Nothing here yet.</p>
+    ) : (
+        <ol class="st-timeline">
+            {activities.map((activity) => (
+                <li class="st-timeline__item">
+                    <p class="st-timeline__head">
+                        <span class="st-timeline__type">{LABELS[activity.type] ?? activity.type}</span>
+                        <time datetime={activity.occurred_at}>{formatTimestamp(activity.occurred_at)}</time>
+                        {activity.actor_email && <span class="st-timeline__who">{firstNameFromEmail(activity.actor_email)}</span>}
+                    </p>
+                    {activity.body && <p class="st-timeline__body">{activity.body}</p>}
+                </li>
+            ))}
+        </ol>
+    )
+}

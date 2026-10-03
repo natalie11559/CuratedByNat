@@ -1,0 +1,70 @@
+---
+// One lead in a list: who, what they are celebrating, when, and how long it has been since contact.
+import { formatDateRange, relativeDays } from '../../lib/studio/dates';
+import { followUpStatus } from '../../lib/studio/followup';
+import { celebratingOf, fullName, type LeadRow } from '../../lib/studio/queries';
+import { quietLabel } from '../../lib/studio/today';
+import { celebratingLabels, SOURCES, STAGES, stageLabel } from '../../lib/studio/vocab';
+
+interface Props {
+    lead: LeadRow;
+    today: string;
+    followUpDays: number;
+    /** Where to come back to after moving the lead. */
+    returnTo?: string;
+    showStage?: boolean;
+    showMove?: boolean;
+}
+
+const { lead, today, followUpDays, returnTo = '/studio/pipeline', showStage = false, showMove = false } = Astro.props;
+const followUp = followUpStatus(lead, { followUpDays, today });
+const what = celebratingLabels(celebratingOf(lead)).join(', ');
+const when = lead.event_date ? formatDateRange(lead.event_date, lead.end_date) : lead.date_not_set ? 'Date not set yet' : '';
+const source = SOURCES.find((entry) => entry.id === lead.source)?.label;
+const hasContact = Boolean(lead.last_contacted_at);
+---
+
+<article class="st-lead-card">
+    <a class="st-lead-card__link" href={`/studio/leads/${lead.id}`}>
+        <span class="st-lead-card__name">{fullName(lead)}</span>
+        {lead.partner_name && <span class="st-lead-card__meta">with {lead.partner_name}</span>}
+        {(what || when) && <span class="st-lead-card__meta">{[what, when].filter(Boolean).join(' · ')}</span>}
+        <span class="st-lead-card__meta">
+            {lead.stage === 'lost' ? `Lost: ${lead.lost_reason ?? 'no reason given'}` : quietLabel(followUp.quietDays, hasContact)}
+            {source && lead.source !== 'website' ? ` · ${source}` : ''}
+        </span>
+        {
+            followUp.due && (
+                <span class="st-flag">
+                    {followUp.reason === 'date' && lead.next_follow_up_at
+                        ? `Follow up: ${relativeDays(lead.next_follow_up_at, today).toLowerCase()}`
+                        : 'Time to follow up'}
+                </span>
+            )
+        }
+        {showStage && <span class="st-lead-card__stage">{stageLabel(lead.stage)}</span>}
+    </a>
+    {
+        showMove && (
+            <details class="st-move">
+                <summary class="st-move__summary">Move</summary>
+                <form class="st-move__form" method="post" action={`/api/studio/leads/${lead.id}/stage`}>
+                    <input type="hidden" name="return_to" value={returnTo} />
+                    <label class="st-visually-hidden" for={`move-${lead.id}`}>
+                        Move {fullName(lead)} to
+                    </label>
+                    <select class="st-select" id={`move-${lead.id}`} name="stage">
+                        {STAGES.map((stage) => (
+                            <option value={stage.id} selected={stage.id === lead.stage}>
+                                {stage.label}
+                            </option>
+                        ))}
+                    </select>
+                    <button class="st-button st-button--secondary" type="submit">
+                        Move
+                    </button>
+                </form>
+            </details>
+        )
+    }
+</article>

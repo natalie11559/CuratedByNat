@@ -1,0 +1,20 @@
+---
+// The banner after something happens: ?notice=saved, ?error=..., ?invalid=first_name,email.
+import { bannerFrom } from '../../lib/studio/messages';
+
+const banner = bannerFrom(Astro.url.searchParams);
+---
+
+{
+    banner && (
+        <p class:list={['st-notice', `st-notice--${banner.kind}`]} role={banner.kind === 'error' ? 'alert' : 'status'}>
+            {banner.text}
+            {banner.leadId && (
+                <>
+                    {' '}
+                    <a href={`/studio/leads/${banner.leadId}`}>Open that lead</a>
+                </>
+            )}
+        </p>
+    )
+}

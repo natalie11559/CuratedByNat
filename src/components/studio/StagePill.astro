@@ -1,0 +1,11 @@
+---
+import { stageLabel } from '../../lib/studio/vocab';
+
+interface Props {
+    stage: string;
+}
+
+const { stage } = Astro.props;
+---
+
+<span class:list={['st-pill', `st-pill--${stage}`]}>{stageLabel(stage)}</span>

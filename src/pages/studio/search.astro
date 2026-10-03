@@ -1,0 +1,52 @@
+---
+// Find anyone by name, email, phone or Instagram, in any stage.
+import LeadCard from '../../components/studio/LeadCard.astro';
+import StudioLayout from '../../layouts/StudioLayout.astro';
+import { todayEastern } from '../../lib/studio/dates';
+import { getSettings, listLeads } from '../../lib/studio/queries';
+import { studioDb } from '../../lib/studio/server';
+
+export const prerender = false;
+
+const db = studioDb();
+if (!db) return Astro.redirect('/studio?error=database-missing', 303);
+
+const q = (Astro.url.searchParams.get('q') ?? '').trim().slice(0, 100);
+const [results, settings] = await Promise.all([q ? listLeads(db, { q }, 50) : Promise.resolve([]), getSettings(db)]);
+const today = todayEastern();
+---
+
+<StudioLayout title="Search" current="pipeline">
+    <p class="st-eyebrow">Find someone</p>
+    <h1 class="st-title">Search</h1>
+    <form class="st-form st-form--row" method="get" action="/studio/search" role="search">
+        <div class="st-field">
+            <label class="st-label" for="search-q">Name, email, phone or Instagram</label>
+            <input class="st-input" id="search-q" name="q" type="search" value={q} maxlength="100" autocomplete="off" autofocus />
+        </div>
+        <button class="st-button st-button--primary" type="submit">Search</button>
+    </form>
+
+    {
+        q && (
+            <section aria-live="polite" aria-labelledby="results-heading">
+                <h2 id="results-heading" class="st-section-title">
+                    {results.length === 0 ? `Nobody matches "${q}"` : `${results.length} ${results.length === 1 ? 'match' : 'matches'}`}
+                </h2>
+                {results.length === 0 ? (
+                    <p class="st-quiet">
+                        Try part of a name or the last few digits of a phone number. <a href="/studio/leads/new">Add them as a new lead</a>
+                    </p>
+                ) : (
+                    <ul class="st-cards" role="list">
+                        {results.map((lead) => (
+                            <li>
+                                <LeadCard lead={lead} today={today} followUpDays={settings.followUpDays} showStage />
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </section>
+        )
+    }
+</StudioLayout>
