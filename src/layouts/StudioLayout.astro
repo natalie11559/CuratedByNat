@@ -4,7 +4,7 @@
 // publish them as public files. Styles come from /studio/app.css (src/studio/studio.css), a guarded route.
 import { firstNameFromEmail } from '../lib/studio/people';
 
-export type StudioSection = 'home' | 'pipeline';
+export type StudioSection = 'home' | 'pipeline' | 'settings';
 
 interface Props {
     title: string;
@@ -19,6 +19,7 @@ const user = Astro.locals.studioUser;
 const navigation: { id: StudioSection; label: string; href: string }[] = [
     { id: 'home', label: 'Home', href: '/studio' },
     { id: 'pipeline', label: 'Pipeline', href: '/studio/pipeline' },
+    { id: 'settings', label: 'Settings', href: '/studio/settings' },
 ];
 ---
 

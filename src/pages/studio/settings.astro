@@ -1,0 +1,86 @@
+---
+// Settings. For now: the price lists that bookings are made from. More arrive with later parts of Studio.
+import Notice from '../../components/studio/Notice.astro';
+import PriceListForm from '../../components/studio/PriceListForm.astro';
+import StudioLayout from '../../layouts/StudioLayout.astro';
+import { listExtras, listPackages, packageDetails } from '../../lib/studio/bookings';
+import { formatCents } from '../../lib/studio/money';
+import { studioDb } from '../../lib/studio/server';
+
+export const prerender = false;
+
+const db = studioDb();
+if (!db) return Astro.redirect('/studio?error=database-missing', 303);
+const [packages, extras] = await Promise.all([listPackages(db, { includeInactive: true }), listExtras(db, { includeInactive: true })]);
+const kinds = [
+    { kind: 'package' as const, title: 'Packages', items: packages, empty: 'No packages yet. Add the first one below.' },
+    { kind: 'extra' as const, title: 'Extras', items: extras, empty: 'No extras yet.' },
+];
+---
+
+<StudioLayout title="Settings" current="settings">
+    <p class="st-eyebrow">Studio</p>
+    <h1 class="st-title">Settings</h1>
+    <Notice />
+
+    <p class="st-hint">Travel fees may apply for locations outside the local service area. Add a travel fee to a booking when it applies.</p>
+
+    {
+        kinds.map(({ kind, title, items, empty }) => {
+            const shown = items.filter((item) => item.active);
+            const hidden = items.filter((item) => !item.active);
+            return (
+                <section class="st-section" aria-labelledby={`${kind}-heading`}>
+                    <h2 class="st-section-title" id={`${kind}-heading`}>{title}</h2>
+                    {shown.length === 0 && <p class="st-quiet">{empty}</p>}
+                    {shown.map((item) => (
+                        <div class="st-price-item">
+                            <details class="st-details">
+                                <summary class="st-details__summary">
+                                    <span class="st-price-item__head">
+                                        <span>{item.name}</span>
+                                        <span>{formatCents(item.price_cents)}</span>
+                                    </span>
+                                </summary>
+                                {kind === 'package' && packageDetails(item as never).length > 0 && (
+                                    <ul class="st-included">
+                                        {packageDetails(item as never).map((line) => <li>{line}</li>)}
+                                    </ul>
+                                )}
+                                <PriceListForm kind={kind} action={`/api/studio/price-list/${kind}/${item.id}`} item={item} submitLabel="Save" idPrefix={`${kind}-${item.id.slice(0, 8)}`} />
+                                <form class="st-form" method="post" action={`/api/studio/price-list/${kind}/${item.id}`}>
+                                    <input type="hidden" name="action" value="hide" />
+                                    <div class="st-actions">
+                                        <button class="st-button st-button--quiet" type="submit">Hide {item.name}</button>
+                                    </div>
+                                </form>
+                            </details>
+                        </div>
+                    ))}
+
+                    {hidden.length > 0 && (
+                        <details class="st-details">
+                            <summary class="st-details__summary">Hidden ({hidden.length})</summary>
+                            {hidden.map((item) => (
+                                <form class="st-payment" method="post" action={`/api/studio/price-list/${kind}/${item.id}`}>
+                                    <input type="hidden" name="action" value="show" />
+                                    <span>
+                                        {item.name} <span class="st-optional">({formatCents(item.price_cents)})</span>
+                                    </span>
+                                    <button class="st-button st-button--quiet" type="submit" aria-label={`Show ${item.name} again`}>
+                                        Show again
+                                    </button>
+                                </form>
+                            ))}
+                        </details>
+                    )}
+
+                    <details class="st-details">
+                        <summary class="st-details__summary">{kind === 'package' ? 'Add a package' : 'Add an extra'}</summary>
+                        <PriceListForm kind={kind} action={`/api/studio/price-list/${kind}`} submitLabel={kind === 'package' ? 'Add package' : 'Add extra'} idPrefix={`new-${kind}`} />
+                    </details>
+                </section>
+            );
+        })
+    }
+</StudioLayout>

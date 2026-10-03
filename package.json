@@ -12,6 +12,7 @@
     "dev:cms": "PUBLIC_KEYSTATIC_STORAGE=local astro dev",
     "check:contrast": "node scripts/check-contrast.mjs",
     "check:privacy": "node scripts/check-build-privacy.mjs",
+    "studio:seed": "node scripts/seed-studio-packages.mjs",
     "test:unit": "node --experimental-strip-types --test 'tests/unit/**/*.test.ts'",
     "test:e2e": "playwright test"
   },

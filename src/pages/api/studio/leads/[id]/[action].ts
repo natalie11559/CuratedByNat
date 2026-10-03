@@ -4,6 +4,7 @@
 import type { APIRoute } from 'astro';
 import { isId } from '../../../../../lib/studio/messages';
 import { forbidden, isSameOrigin, json } from '../../../../../lib/studio/http';
+import { createBooking, getBookingsForLead, listExtras, listPackages } from '../../../../../lib/studio/bookings';
 import {
     changeStage,
     getSettings,
@@ -17,7 +18,7 @@ import {
     type WriteResult,
 } from '../../../../../lib/studio/queries';
 import { actorEmail, formInput, redirectTo, safeStudioPath, studioDb } from '../../../../../lib/studio/server';
-import { str, validateFollowUpDate, validateLeadFields } from '../../../../../lib/studio/validate';
+import { str, validateBookingInput, validateFollowUpDate, validateLeadFields, type PackageOption } from '../../../../../lib/studio/validate';
 
 export const prerender = false;
 
@@ -50,8 +51,23 @@ export const POST: APIRoute = async ({ request, url, locals, params }) => {
             if (!checked.ok) return redirectTo(leadPage, { invalid: Object.keys(checked.errors).join(',') });
             return finish(await updateLead(db, id, checked.value, { actor }), 'saved', leadPage);
         }
-        case 'stage':
-            return finish(await changeStage(db, id, str(raw, 'stage'), { actor }), 'moved');
+        case 'stage': {
+            const stage = str(raw, 'stage');
+            // Booking someone needs the details of the booking, so the form for them opens instead.
+            if (stage === 'booked' && (await getBookingsForLead(db, id)).length === 0) {
+                return redirectTo(leadPage, { notice: 'booking-needed' });
+            }
+            return finish(await changeStage(db, id, stage, { actor }), 'moved');
+        }
+        case 'book': {
+            const toOption = (rows: Array<{ id: string; name: string; price_cents: number }>): PackageOption[] =>
+                rows.map((row) => ({ id: row.id, name: row.name, priceCents: row.price_cents }));
+            const [packages, extras] = await Promise.all([listPackages(db), listExtras(db)]);
+            const checked = validateBookingInput(raw, { packages: toOption(packages), extras: toOption(extras) });
+            if (!checked.ok) return redirectTo(leadPage, { invalid: Object.keys(checked.errors).join(','), notice: undefined });
+            const result = await createBooking(db, id, checked.value, { actor });
+            return finish(result, 'booked', leadPage);
+        }
         case 'lost': {
             const reason = str(raw, 'reason');
             const { lostReasons } = await getSettings(db);

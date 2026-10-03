@@ -1,32 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { addLead, easternToday, unique } from './helpers/studio';
 
 // Studio's pipeline, against the development server where the sign-in shortcut is on.
-
-const easternToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
-const unique = (label: string) => `${label}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
-
-interface NewLead {
-    firstName: string;
-    lastName?: string;
-    email?: string;
-    phone?: string;
-}
-
-/** Adds a lead through the form, the way Nat would, and lands on its page. */
-async function addLead(page: Page, lead: NewLead) {
-    await page.goto('/studio/leads/new');
-    await page.getByLabel('First name').fill(lead.firstName);
-    if (lead.lastName) await page.getByLabel('Last name').fill(lead.lastName);
-    if (lead.email) await page.getByLabel('Email').fill(lead.email);
-    if (lead.phone) await page.getByLabel('Phone').fill(lead.phone);
-    await page.getByLabel('Where did they come from?').selectOption('instagram');
-    await page.getByRole('checkbox', { name: 'Wedding' }).check();
-    await page.getByLabel('Event date').fill('2027-05-15');
-    await page.getByRole('button', { name: 'Add lead' }).click();
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(lead.firstName);
-    await expect(page.getByRole('status')).toHaveText('Lead added.');
-}
 
 test.describe('Adding and working a lead', () => {
     test('adds a lead from the + button and shows its details', async ({ page }) => {
@@ -82,20 +58,30 @@ test.describe('Adding and working a lead', () => {
 
     test('moves a lead through every stage, writing each move on the timeline', async ({ page }) => {
         await addLead(page, { firstName: unique('Dee') });
-        for (const [stage, previous] of [
-            ['Contacted', 'New'],
-            ['Consultation', 'Contacted'],
-            ['Packages sent', 'Consultation'],
-            ['Booked', 'Packages sent'],
-            ['Event done', 'Booked'],
-            ['Delivered', 'Event done'],
-        ] as const) {
+        const move = async (stage: string, previous: string) => {
             await page.getByLabel('Stage', { exact: true }).selectOption({ label: stage });
             await page.getByRole('button', { name: 'Move', exact: true }).click();
             await expect(page.getByRole('status')).toHaveText('Moved.');
-            await expect(page.locator('.st-pill')).toHaveText(stage);
+            await expect(page.locator('.st-pill').first()).toHaveText(stage);
             await expect(page.getByText(`Moved from ${previous} to ${stage}.`)).toBeVisible();
-        }
+        };
+        await move('Contacted', 'New');
+        await move('Consultation', 'Contacted');
+        await move('Packages sent', 'Consultation');
+
+        // Booked needs the booking details, so the booking form opens instead of a plain move.
+        await page.getByLabel('Stage', { exact: true }).selectOption({ label: 'Booked' });
+        await page.getByRole('button', { name: 'Move', exact: true }).click();
+        const form = page.locator('details[open] form[action$="/book"]');
+        await form.getByLabel('Package', { exact: true }).selectOption('custom');
+        await form.getByLabel(/^Custom package name/).fill('Test day');
+        await form.getByLabel(/^Custom price/).fill('300');
+        await form.getByRole('button', { name: 'Book this client' }).click();
+        await expect(page.locator('.st-pill').first()).toHaveText('Booked');
+        await expect(page.getByText('Booked.', { exact: true })).toBeVisible();
+
+        await move('Event done', 'Booked');
+        await move('Delivered', 'Event done');
     });
 
     test('marks a lead lost with a reason, then reopens it where it was', async ({ page }) => {
@@ -260,7 +246,7 @@ test.describe('Safety and access', () => {
         const headers = { Origin: baseURL ?? '' };
         expect((await request.post('/api/studio/leads/not-an-id/delete', { form: {}, headers, maxRedirects: 0 })).status()).toBe(404);
         const id = '123e4567-e89b-42d3-a456-426614174000';
-        const missing = await request.post(`/api/studio/leads/${id}/stage`, { form: { stage: 'booked' }, headers, maxRedirects: 0 });
+        const missing = await request.post(`/api/studio/leads/${id}/stage`, { form: { stage: 'consultation' }, headers, maxRedirects: 0 });
         expect(missing.status()).toBe(303);
         expect(missing.headers().location).toContain('error=not-found');
         expect((await request.get(`/api/studio/leads/${id}/delete`)).status()).toBe(405);

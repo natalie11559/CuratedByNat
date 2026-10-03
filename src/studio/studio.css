@@ -955,3 +955,113 @@ html {
 .st-details--danger .st-details__summary {
     color: var(--color-error);
 }
+
+/* ---- Bookings and money ---------------------------------------------------------------------------- */
+
+.st-booking-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.st-subtitle {
+    margin: var(--space-6) 0 var(--space-2);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.st-hint {
+    margin: var(--space-1) 0 0;
+    font-size: 14px;
+    color: var(--color-text-muted);
+}
+
+.st-money .st-dl__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-4);
+}
+
+.st-money dd {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.st-money .st-money__total {
+    font-weight: 600;
+}
+
+.st-money .st-money__total dt {
+    color: var(--color-text);
+}
+
+.st-extras {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.st-extra {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 88px;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.st-extra__label {
+    font-size: 15px;
+}
+
+.st-input--small {
+    text-align: center;
+}
+
+.st-payments {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: var(--border-hairline);
+}
+
+.st-payment {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    border-bottom: var(--border-hairline);
+}
+
+.st-payment__sub {
+    display: block;
+    font-size: 14px;
+    color: var(--color-text-muted);
+}
+
+.st-payform {
+    margin-top: var(--space-5);
+    padding-top: var(--space-5);
+    border-top: var(--border-hairline);
+}
+
+.st-price-item {
+    border: var(--border-hairline);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    padding: 0 var(--space-4);
+    margin-bottom: var(--space-3);
+}
+
+.st-price-item .st-details {
+    margin-top: 0;
+    border-top: 0;
+}
+
+.st-price-item__head {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    font-weight: 600;
+}

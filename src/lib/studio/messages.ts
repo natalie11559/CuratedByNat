@@ -14,6 +14,15 @@ export const NOTICES: Record<string, string> = {
     deleted: 'Moved to Recently deleted.',
     restored: 'Restored.',
     imported: 'Your inquiries are up to date.',
+    booked: 'Booked! Their details are below.',
+    'booking-needed': 'Add the booking details below to mark them as booked.',
+    'booking-saved': 'Booking saved.',
+    'booking-removed': 'Booking removed.',
+    'payment-added': 'Payment recorded.',
+    'payment-removed': 'Payment removed.',
+    'price-saved': 'Saved.',
+    'price-hidden': 'Hidden. It stays on past bookings.',
+    'price-shown': 'It is back on the list.',
 };
 
 export const ERRORS: Record<string, string> = {
@@ -43,7 +52,28 @@ export const FIELD_LABELS: Record<string, string> = {
     venue: 'Venue',
     notes: 'Notes',
     next_follow_up_at: 'Follow-up date',
+    package_id: 'Package',
+    custom_name: 'Package name',
+    custom_price: 'Package price',
+    travel_fee: 'Travel fee',
+    travel_note: 'Travel note',
+    total: 'Total',
+    retainer: 'Retainer',
+    balance_due_date: 'Balance due date',
+    amount: 'Amount',
+    received_on: 'Date received',
+    method: 'How it was paid',
+    note: 'Note',
+    name: 'Name',
+    price: 'Price',
+    details: "What's included",
+    sort_order: 'Order',
 };
+
+/** Extras are named extra_<id> in the booking form. */
+function labelFor(field: string): string | undefined {
+    return FIELD_LABELS[field] ?? (field.startsWith('extra_') ? 'Extras' : undefined);
+}
 
 const LEAD_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const isId = (value: string | null | undefined): value is string => typeof value === 'string' && LEAD_ID.test(value);
@@ -64,8 +94,8 @@ export function bannerFrom(params: URLSearchParams): Banner | null {
     }
     const invalid = (params.get('invalid') ?? '')
         .split(',')
-        .map((field) => FIELD_LABELS[field])
-        .filter((label): label is string => Boolean(label));
+        .map((field) => labelFor(field))
+        .filter((label, index, all): label is string => Boolean(label) && all.indexOf(label) === index);
     if (invalid.length > 0) return { kind: 'error', text: `Please check: ${invalid.join(', ')}.` };
     const notice = params.get('notice');
     if (notice && NOTICES[notice]) return { kind: 'ok', text: NOTICES[notice]! };

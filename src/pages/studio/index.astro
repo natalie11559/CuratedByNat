@@ -6,6 +6,8 @@ import StudioLayout from '../../layouts/StudioLayout.astro';
 import { formatShortDate, relativeDays, todayEastern } from '../../lib/studio/dates';
 import { countUnlinkedInquiries, syncUnlinkedInquiries } from '../../lib/studio/leads';
 import { firstNameFromEmail } from '../../lib/studio/people';
+import { listBalancesDue, type BalanceDue } from '../../lib/studio/bookings';
+import { formatCents } from '../../lib/studio/money';
 import { celebratingOf, fullName, getSettings, listLeads } from '../../lib/studio/queries';
 import { studioDb } from '../../lib/studio/server';
 import { buildToday } from '../../lib/studio/today';
@@ -22,6 +24,7 @@ let attention = 0;
 let overview = null as ReturnType<typeof buildToday> | null;
 let followUpDays = 5;
 let total = 0;
+let balances: BalanceDue[] = [];
 
 if (db) {
     // Website inquiries that arrived before Studio existed, or whose lead step failed, are picked up here.
@@ -33,6 +36,7 @@ if (db) {
     followUpDays = settings.followUpDays;
     total = leads.length;
     overview = buildToday(leads, { today, followUpDays });
+    balances = await listBalancesDue(db, today).catch(() => []);
 }
 ---
 
@@ -114,6 +118,32 @@ if (db) {
                                             <span class="st-row__sub">
                                                 {item.kind === 'event' ? celebratingLabels(celebratingOf(item.lead)).join(', ') || 'Event' : 'Follow-up'}
                                             </span>
+                                        </span>
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
+
+                <section class="st-section" aria-labelledby="balances-heading">
+                    <h2 id="balances-heading" class="st-section-title">
+                        Balances due <span class="st-stagebar__count">{balances.length}</span>
+                    </h2>
+                    {balances.length === 0 ? (
+                        <p class="st-quiet">Nothing due in the next two weeks.</p>
+                    ) : (
+                        <ul class="st-rows" role="list">
+                            {balances.map((balance) => (
+                                <li>
+                                    <a class="st-row" href={`/studio/leads/${balance.leadId}`}>
+                                        <span class="st-row__date">
+                                            {formatShortDate(balance.dueDate)}
+                                            <span class="st-row__sub">{balance.dueDate < today ? `Overdue ${relativeDays(balance.dueDate, today).toLowerCase()}` : relativeDays(balance.dueDate, today)}</span>
+                                        </span>
+                                        <span class="st-row__main">
+                                            <span class="st-row__title">{balance.firstName} {balance.lastName}</span>
+                                            <span class="st-row__sub">{formatCents(balance.balanceCents)} still to receive{balance.packageName ? ` for ${balance.packageName}` : ''}</span>
                                         </span>
                                     </a>
                                 </li>

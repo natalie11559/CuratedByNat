@@ -1,11 +1,14 @@
 ---
 // One lead: who they are, how to reach them, where they are in the pipeline, and everything that has happened.
 import ActivityList from '../../../components/studio/ActivityList.astro';
+import BookingCard from '../../../components/studio/BookingCard.astro';
+import BookingForm from '../../../components/studio/BookingForm.astro';
 import Notice from '../../../components/studio/Notice.astro';
 import OriginalInquiry from '../../../components/studio/OriginalInquiry.astro';
 import LeadForm from '../../../components/studio/LeadForm.astro';
 import StagePill from '../../../components/studio/StagePill.astro';
 import StudioLayout from '../../../layouts/StudioLayout.astro';
+import { getBookingsForLead, listExtras, listPackages } from '../../../lib/studio/bookings';
 import { formatDate, formatDateRange, formatTimestamp, relativeDays, todayEastern } from '../../../lib/studio/dates';
 import { followUpStatus } from '../../../lib/studio/followup';
 import { isId } from '../../../lib/studio/messages';
@@ -22,7 +25,14 @@ if (!db || !isId(id)) return Astro.redirect('/studio/pipeline?error=not-found', 
 const lead = await getLead(db, id, { includeDeleted: true });
 if (!lead) return Astro.redirect('/studio/pipeline?error=not-found', 303);
 
-const [activities, inquiries, settings] = await Promise.all([listActivities(db, id), listInquiriesForLead(db, id), getSettings(db)]);
+const [activities, inquiries, settings, bookings, packages, extras] = await Promise.all([
+    listActivities(db, id),
+    listInquiriesForLead(db, id),
+    getSettings(db),
+    getBookingsForLead(db, id),
+    listPackages(db),
+    listExtras(db),
+]);
 const today = todayEastern();
 const followUp = followUpStatus(lead, { followUpDays: settings.followUpDays, today });
 const name = fullName(lead);
@@ -32,6 +42,8 @@ const phoneDigits = lead.phone.replace(/[^\d+]/g, '');
 const source = SOURCES.find((entry) => entry.id === lead.source)?.label ?? lead.source;
 const isDeleted = Boolean(lead.deleted_at);
 const isLost = lead.stage === 'lost';
+const pageUrl = `/studio/leads/${id}`;
+const bookingFormOpen = bookings.length === 0 && (lead.stage === 'booked' || Astro.url.searchParams.get('notice') === 'booking-needed');
 const georgia = { yes: 'In Georgia', destination: 'A destination', 'not-sure': 'Not sure yet' }[lead.in_georgia as 'yes'] ?? '';
 
 const details: [string, string][] = [
@@ -182,6 +194,23 @@ const details: [string, string][] = [
                     }
                 </section>
             </>
+        )
+    }
+
+    {
+        bookings.map((booking) => (
+            <BookingCard booking={booking} packages={packages} extras={extras} returnTo={pageUrl} today={today} eventDate={lead.event_date} />
+        ))
+    }
+    {
+        !isDeleted && !isLost && (
+            <section class="st-card" aria-labelledby="booking-heading">
+                <h2 id="booking-heading" class="st-card__title">{bookings.length === 0 ? 'Booking' : 'Another booking'}</h2>
+                <details class="st-details" open={bookingFormOpen}>
+                    <summary class="st-details__summary">{bookings.length === 0 ? `Book ${lead.first_name}` : 'Add another booking'}</summary>
+                    <BookingForm action={`/api/studio/leads/${id}/book`} returnTo={pageUrl} packages={packages} extras={extras} eventDate={lead.event_date} submitLabel="Book this client" idPrefix="book" />
+                </details>
+            </section>
         )
     }
 

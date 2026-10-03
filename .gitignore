@@ -23,3 +23,6 @@ tests/screenshots/
 # downloaded at build time from the live site (integrations/instagram-feed.mjs)
 src/generated/
 src/assets/images/instagram-feed/
+
+# Nat's real prices stay on this computer (see scripts/seed-studio-packages.mjs)
+studio-seed.local.json

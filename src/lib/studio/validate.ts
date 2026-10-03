@@ -1,7 +1,8 @@
 // Checks what Nat types into Studio's forms. Every API route runs the same checks on the server, whatever the
 // browser did. Messages are short and kind, because they show up as a banner on a phone.
 import { isValidEmail } from '../inquiry/validate.ts';
-import { isIsoDate } from './dates.ts';
+import { addDays, isIsoDate } from './dates.ts';
+import { parseDollars, PAYMENT_METHODS, suggestedTotal, type PaymentMethod } from './money.ts';
 import { CELEBRATING, SOURCES, type CelebratingId, type SourceId } from './vocab.ts';
 
 export type RawInput = Record<string, string | string[] | undefined>;
@@ -133,4 +134,179 @@ export function validateFollowUpDate(raw: RawInput): Checked<string | null> {
     const value = str(raw, 'next_follow_up_at');
     if (!value) return { ok: true, value: null };
     return isIsoDate(value) ? { ok: true, value } : { ok: false, errors: { next_follow_up_at: "That date doesn't look right." } };
+}
+
+// ---- Bookings, payments and price lists ---------------------------------------------------------------
+
+export interface PackageOption {
+    id: string;
+    name: string;
+    priceCents: number;
+}
+
+export interface BookingExtraInput {
+    extraId: string | null;
+    name: string;
+    priceCents: number;
+    quantity: number;
+}
+
+/** What goes into a booking. Prices are copied from the price lists here, not looked up later. */
+export interface BookingInput {
+    packageId: string | null;
+    packageName: string;
+    packagePriceCents: number;
+    extras: BookingExtraInput[];
+    travelFeeCents: number;
+    travelFeeNote: string;
+    totalCents: number;
+    retainerCents: number;
+    balanceDueDate: string | null;
+    notes: string;
+}
+
+function money(raw: RawInput, key: string, errors: Errors, message: string, allowBlank = true): number | null {
+    const text = str(raw, key);
+    if (text === '') return allowBlank ? null : (errors[key] = message, null);
+    const cents = parseDollars(text);
+    if (cents === null) errors[key] = message;
+    return cents;
+}
+
+/**
+ * Reads the booking form. `packages` and `extras` are the current price lists; the chosen prices are copied.
+ * A blank total means "package + extras + travel". Extras are named `extra_<id>` and carry a quantity.
+ */
+export function validateBookingInput(
+    raw: RawInput,
+    lists: { packages: readonly PackageOption[]; extras: readonly PackageOption[] },
+): Checked<BookingInput> {
+    const errors: Errors = {};
+
+    const packageId = str(raw, 'package_id');
+    let packageName = '';
+    let packagePriceCents = 0;
+    if (packageId && packageId !== 'custom') {
+        const chosen = lists.packages.find((entry) => entry.id === packageId);
+        if (!chosen) errors.package_id = 'Pick a package from the list.';
+        else {
+            packageName = chosen.name;
+            packagePriceCents = chosen.priceCents;
+        }
+    } else if (packageId === 'custom') {
+        packageName = str(raw, 'custom_name');
+        if (!packageName) errors.custom_name = 'Name this package.';
+        else if (tooLong(packageName, 100)) errors.custom_name = 'That name is too long.';
+        packagePriceCents = money(raw, 'custom_price', errors, "That price doesn't look right.", false) ?? 0;
+    }
+
+    const extras: BookingExtraInput[] = [];
+    for (const extra of lists.extras) {
+        const quantityText = str(raw, `extra_${extra.id}`);
+        if (quantityText === '' || quantityText === '0') continue;
+        const quantity = Number(quantityText);
+        if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) {
+            errors[`extra_${extra.id}`] = 'Use a whole number from 1 to 20.';
+            continue;
+        }
+        extras.push({ extraId: extra.id, name: extra.name, priceCents: extra.priceCents, quantity });
+    }
+
+    const travelFeeCents = money(raw, 'travel_fee', errors, "That travel fee doesn't look right.") ?? 0;
+    const travelFeeNote = str(raw, 'travel_note');
+    if (tooLong(travelFeeNote, 200)) errors.travel_note = 'That note is too long.';
+
+    const typedTotal = money(raw, 'total', errors, "That total doesn't look right.");
+    const retainerCents = money(raw, 'retainer', errors, "That retainer doesn't look right.") ?? 0;
+
+    const balanceDueDate = str(raw, 'balance_due_date') || null;
+    if (balanceDueDate && !isIsoDate(balanceDueDate)) errors.balance_due_date = "That date doesn't look right.";
+
+    const notes = str(raw, 'notes');
+    if (tooLong(notes, 5000)) errors.notes = 'Those notes are too long.';
+
+    const totalCents = typedTotal ?? suggestedTotal({ packagePriceCents, extras, travelFeeCents });
+    if (!errors.total && !errors.retainer && retainerCents > totalCents) errors.retainer = 'The retainer is more than the total.';
+
+    if (Object.keys(errors).length > 0) return { ok: false, errors };
+    return {
+        ok: true,
+        value: {
+            packageId: packageId && packageId !== 'custom' ? packageId : null,
+            packageName,
+            packagePriceCents,
+            extras,
+            travelFeeCents,
+            travelFeeNote,
+            totalCents,
+            retainerCents,
+            balanceDueDate,
+            notes,
+        },
+    };
+}
+
+/** The balance is normally due a month before the event. */
+export function suggestedBalanceDueDate(eventDate: string | null): string {
+    return eventDate && isIsoDate(eventDate) ? addDays(eventDate, -30) : '';
+}
+
+export interface PaymentInput {
+    amountCents: number;
+    receivedOn: string;
+    method: PaymentMethod;
+    note: string;
+}
+
+export function validatePaymentInput(raw: RawInput, today: string): Checked<PaymentInput> {
+    const errors: Errors = {};
+    const amountCents = parseDollars(str(raw, 'amount'));
+    if (amountCents === null || amountCents <= 0) errors.amount = 'Enter the amount received, like 150 or 150.50.';
+
+    const receivedOn = str(raw, 'received_on') || today;
+    if (!isIsoDate(receivedOn)) errors.received_on = "That date doesn't look right.";
+
+    const method = (str(raw, 'method') || 'other') as PaymentMethod;
+    if (!PAYMENT_METHODS.some((entry) => entry.id === method)) errors.method = 'Pick from the choices shown.';
+
+    const note = str(raw, 'note');
+    if (tooLong(note, 200)) errors.note = 'That note is too long.';
+
+    if (Object.keys(errors).length > 0) return { ok: false, errors };
+    return { ok: true, value: { amountCents: amountCents!, receivedOn, method, note } };
+}
+
+export interface PriceListInput {
+    name: string;
+    priceCents: number;
+    /** Packages only: the "what's included" lines. */
+    details: string[];
+    sortOrder: number;
+    active: boolean;
+}
+
+/** One package or extra from the settings forms. */
+export function validatePriceListItem(raw: RawInput): Checked<PriceListInput> {
+    const errors: Errors = {};
+    const name = str(raw, 'name');
+    if (!name) errors.name = 'Give it a name.';
+    else if (tooLong(name, 100)) errors.name = 'That name is too long.';
+
+    const priceCents = parseDollars(str(raw, 'price'));
+    if (priceCents === null) errors.price = "That price doesn't look right.";
+
+    const details = str(raw, 'details')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+    if (details.length > 30 || details.some((line) => tooLong(line, 200))) errors.details = 'Keep it to 30 short lines.';
+
+    const sortOrder = str(raw, 'sort_order') === '' ? 0 : Number(str(raw, 'sort_order'));
+    if (!Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 999) errors.sort_order = 'Use a whole number from 0 to 999.';
+
+    if (Object.keys(errors).length > 0) return { ok: false, errors };
+    return {
+        ok: true,
+        value: { name, priceCents: priceCents!, details, sortOrder, active: str(raw, 'active') !== '0' },
+    };
 }

@@ -1,0 +1,180 @@
+---
+// One booking: what was agreed, what has been received, what is left, and the forms to change either.
+import type { BookingView, ExtraRow, PackageRow } from '../../lib/studio/bookings';
+import { formatDate, relativeDays } from '../../lib/studio/dates';
+import { formatCents, PAYMENT_METHODS, PAYMENT_STATUS_LABELS, toDollarInput } from '../../lib/studio/money';
+import BookingForm from './BookingForm.astro';
+
+interface Props {
+    booking: BookingView;
+    packages: readonly PackageRow[];
+    extras: readonly ExtraRow[];
+    returnTo: string;
+    today: string;
+    eventDate: string | null;
+}
+
+const { booking, packages, extras, returnTo, today, eventDate } = Astro.props;
+const { summary } = booking;
+const title = booking.package_name || 'Booking';
+const methodLabel = (method: string) => PAYMENT_METHODS.find((entry) => entry.id === method)?.label ?? method;
+const extrasTotal = booking.extras.reduce((sum, extra) => sum + extra.price_cents * extra.quantity, 0);
+const adjustment = booking.total_cents - (booking.package_price_cents + extrasTotal + booking.travel_fee_cents);
+const prefix = `b-${booking.id.slice(0, 8)}`;
+---
+
+<section class="st-card" aria-labelledby={`${prefix}-heading`}>
+    <div class="st-booking-head">
+        <h2 class="st-card__title" id={`${prefix}-heading`}>{title}</h2>
+        <span class:list={['st-pill', summary.status === 'paid_in_full' && 'st-pill--booked']}>{PAYMENT_STATUS_LABELS[summary.status]}</span>
+    </div>
+
+    <dl class="st-dl st-money">
+        {
+            booking.package_name && (
+                <div class="st-dl__row">
+                    <dt>{booking.package_name}</dt>
+                    <dd>{formatCents(booking.package_price_cents)}</dd>
+                </div>
+            )
+        }
+        {
+            booking.extras.map((extra) => (
+                <div class="st-dl__row">
+                    <dt>
+                        {extra.name}
+                        {extra.quantity > 1 ? ` × ${extra.quantity}` : ''}
+                    </dt>
+                    <dd>{formatCents(extra.price_cents * extra.quantity)}</dd>
+                </div>
+            ))
+        }
+        {
+            booking.travel_fee_cents > 0 && (
+                <div class="st-dl__row">
+                    <dt>Travel{booking.travel_fee_note ? ` (${booking.travel_fee_note})` : ''}</dt>
+                    <dd>{formatCents(booking.travel_fee_cents)}</dd>
+                </div>
+            )
+        }
+        {
+            adjustment !== 0 && (
+                <div class="st-dl__row">
+                    <dt>Adjustment</dt>
+                    <dd>{adjustment < 0 ? `-${formatCents(-adjustment)}` : formatCents(adjustment)}</dd>
+                </div>
+            )
+        }
+        <div class="st-dl__row st-money__total">
+            <dt>Total</dt>
+            <dd>{formatCents(booking.total_cents)}</dd>
+        </div>
+        {
+            booking.retainer_cents > 0 && (
+                <div class="st-dl__row">
+                    <dt>Retainer</dt>
+                    <dd>{formatCents(booking.retainer_cents)}</dd>
+                </div>
+            )
+        }
+        <div class="st-dl__row">
+            <dt>Received so far</dt>
+            <dd>{formatCents(summary.paidCents)}</dd>
+        </div>
+        <div class="st-dl__row st-money__total">
+            <dt>{summary.overpaidCents > 0 ? 'Overpaid by' : 'Balance'}</dt>
+            <dd>{formatCents(summary.overpaidCents > 0 ? summary.overpaidCents : summary.balanceCents)}</dd>
+        </div>
+        {
+            booking.balance_due_date && summary.balanceCents > 0 && (
+                <div class="st-dl__row">
+                    <dt>Balance due</dt>
+                    <dd>
+                        {formatDate(booking.balance_due_date)} <span class="st-optional">({relativeDays(booking.balance_due_date, today).toLowerCase()})</span>
+                    </dd>
+                </div>
+            )
+        }
+    </dl>
+    {booking.notes && <p class="st-notes">{booking.notes}</p>}
+
+    <h3 class="st-subtitle">Payments</h3>
+    {
+        booking.payments.length === 0 ? (
+            <p class="st-quiet">Nothing received yet.</p>
+        ) : (
+            <ul class="st-payments" role="list">
+                {booking.payments.map((payment) => (
+                    <li class="st-payment">
+                        <span class="st-payment__main">
+                            <strong>{formatCents(payment.amount_cents)}</strong> by {methodLabel(payment.method)}
+                            <span class="st-payment__sub">
+                                {formatDate(payment.received_on)}
+                                {payment.note ? `, ${payment.note}` : ''}
+                            </span>
+                        </span>
+                        <form method="post" action={`/api/studio/payments/${payment.id}/delete`}>
+                            <input type="hidden" name="return_to" value={returnTo} />
+                            <button class="st-button st-button--quiet" type="submit" aria-label={`Remove the ${formatCents(payment.amount_cents)} payment from ${formatDate(payment.received_on)}`}>
+                                Remove
+                            </button>
+                        </form>
+                    </li>
+                ))}
+            </ul>
+        )
+    }
+
+    <form class="st-form st-payform" method="post" action={`/api/studio/bookings/${booking.id}/payment`}>
+        <input type="hidden" name="return_to" value={returnTo} />
+        <div class="st-field-row">
+            <div class="st-field">
+                <label class="st-label" for={`${prefix}-amount`}>Amount received</label>
+                <input class="st-input" id={`${prefix}-amount`} name="amount" type="text" inputmode="decimal" autocomplete="off" required placeholder={summary.balanceCents > 0 ? toDollarInput(summary.balanceCents) : '0'} />
+            </div>
+            <div class="st-field">
+                <label class="st-label" for={`${prefix}-received`}>Date received</label>
+                <input class="st-input" id={`${prefix}-received`} name="received_on" type="date" value={today} />
+            </div>
+        </div>
+        <div class="st-field-row">
+            <div class="st-field">
+                <label class="st-label" for={`${prefix}-method`}>How it was paid</label>
+                <select class="st-select" id={`${prefix}-method`} name="method">
+                    {PAYMENT_METHODS.map((method) => <option value={method.id}>{method.label}</option>)}
+                </select>
+            </div>
+            <div class="st-field">
+                <label class="st-label" for={`${prefix}-note`}>Note <span class="st-optional">(optional)</span></label>
+                <input class="st-input" id={`${prefix}-note`} name="note" type="text" maxlength="200" autocomplete="off" />
+            </div>
+        </div>
+        <div class="st-actions">
+            <button class="st-button st-button--primary" type="submit">Record payment</button>
+        </div>
+    </form>
+
+    <details class="st-details">
+        <summary class="st-details__summary">Edit booking</summary>
+        <BookingForm
+            action={`/api/studio/bookings/${booking.id}/update`}
+            returnTo={returnTo}
+            packages={packages}
+            extras={extras}
+            booking={booking}
+            eventDate={eventDate}
+            submitLabel="Save booking"
+            idPrefix={`${prefix}-edit`}
+        />
+    </details>
+    <details class="st-details st-details--danger">
+        <summary class="st-details__summary">Remove this booking</summary>
+        <form class="st-form" method="post" action={`/api/studio/bookings/${booking.id}/remove`}>
+            <input type="hidden" name="return_to" value={returnTo} />
+            <p>This takes the booking and its payments off {title === 'Booking' ? 'this lead' : 'the lead'}. It stays in the audit trail.</p>
+            <div class="st-actions">
+                <button class="st-button st-button--danger" type="submit">Remove booking</button>
+            </div>
+        </form>
+    </details>
+</section>
