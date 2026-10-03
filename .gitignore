@@ -19,3 +19,7 @@ tests/screenshots/
 
 # OS
 .DS_Store
+
+# downloaded at build time from the live site (integrations/instagram-feed.mjs)
+src/generated/
+src/assets/images/instagram-feed/

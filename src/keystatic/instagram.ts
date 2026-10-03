@@ -31,7 +31,8 @@ export const instagram = singleton({
         }),
         tiles: fields.array(photoField({ label: 'Photo', folder: 'instagram' }), {
             label: 'Photos',
-            description: 'Exactly four, shown side by side as tall 2:3 crops (two by two on phones). Each one opens your Instagram profile. Drag to reorder.',
+            description:
+                'Exactly four, shown side by side as tall 2:3 crops (two by two on phones). Each one opens your Instagram profile. Drag to reorder. These are the backup: with "Instagram feed (automatic photos)" switched on, your latest posts are shown instead, and these appear only when they can\'t be.',
             itemLabel: (props) => photoSlotWarning(props) ?? props.fields.alt.value,
             validation: { length: { min: 4, max: 4 } },
         }),

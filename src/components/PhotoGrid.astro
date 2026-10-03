@@ -7,6 +7,8 @@ import Photo from './Photo.astro';
 interface Tile {
     image: string | null | undefined;
     alt: string;
+    /** The tile's own link (a post); falls back to `tileHref`. */
+    href?: string;
     focusVertical?: string | null;
     focusHorizontal?: string | null;
 }
@@ -21,7 +23,7 @@ interface Props {
     /** Shown under the button, uppercased with CSS. */
     handle?: string;
     tiles: readonly Tile[];
-    /** Where every tile links (the Instagram profile). */
+    /** Where a tile links when it has no link of its own (the Instagram profile). */
     tileHref: string;
     class?: string;
     [attribute: `data-${string}`]: unknown;
@@ -61,7 +63,7 @@ const tileSizes =
             {
                 tiles.map((tile) => (
                     <li class="photo-grid__tile-item">
-                        <a class="photo-grid__tile" href={tileHref} target="_blank" rel="noopener">
+                        <a class="photo-grid__tile" href={tile.href ?? tileHref} target="_blank" rel="noopener">
                             <Photo
                                 src={tile.image}
                                 alt={tile.alt}

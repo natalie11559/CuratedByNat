@@ -17,6 +17,7 @@ Nat edits everything in the browser at `/keystatic`. Her guide is [EDITING-GUIDE
 | Cloudflare D1 | Stores every inquiry as a backup, before the email is sent. |
 | Cloudflare Turnstile | Invisible spam check on the form, together with a honeypot field and a minimum fill time. |
 | [Resend](https://resend.com) | Emails each inquiry to hello@curatedbynat.com with Reply-To set to the visitor. |
+| Cloudflare R2 + a cron trigger | Every six hours the Worker copies Nat's newest Instagram posts into a bucket; the next build turns them into the Home tiles and the "Inquire now" slideshow. See [Instagram feed](#instagram-feed). |
 
 Content lives in `src/content/*.json` (one file per editor section) and photos in
 `src/assets/images/<section>/`. Each editor section has its own photo folder, because Keystatic renames
@@ -63,8 +64,66 @@ Nothing secret is committed. `.dev.vars` and `.env` are git-ignored.
 | `TURNSTILE_SECRET_KEY` | Secret, runtime | `npx wrangler secret put TURNSTILE_SECRET_KEY` |
 | `RESEND_API_KEY` | Secret, runtime | `npx wrangler secret put RESEND_API_KEY` |
 | `INQUIRY_TO`, `INQUIRY_FROM` | Plain vars | `wrangler.jsonc` |
+| `INSTAGRAM_ACCESS_TOKEN` | Secret, runtime | `npx wrangler secret put INSTAGRAM_ACCESS_TOKEN`. Only the first token: the refreshed one is kept in D1. Set it again if the connection ever expires. |
+| `DEPLOY_HOOK_URL` | Secret, runtime | `npx wrangler secret put DEPLOY_HOOK_URL` (a Workers Builds deploy hook for `main`). |
+| `INSTAGRAM_FEED_URL` | Build-time, optional | Where the build downloads the feed from. Defaults to the live site in Cloudflare's builds (`WORKERS_CI`); unset locally, so local builds never touch the network. `off` disables it. |
 
 If `RESEND_API_KEY` is missing in production, inquiries are still saved to D1 but no email is sent.
+
+## Instagram feed
+
+Two sections can show Nat's latest Instagram posts instead of hand-picked photos: the four tiles in "More of
+my work, over on Instagram" on Home, and the slideshow behind "Inquire now". Nat chooses per section under
+Services and photos > Instagram feed (automatic photos); her hand-picked photos stay as the backup.
+
+How it works (all free, no third-party service):
+
+1. `src/worker.ts` is the Worker's entry point. Besides serving the site it has a `scheduled` handler that runs
+   `src/lib/instagram/sync.ts` every six hours (cron in `wrangler.jsonc`).
+2. The job refreshes the Instagram access token (kept in the D1 table `instagram_state`), lists her recent
+   posts through the Instagram API with Instagram Login, and copies new pictures into the R2 bucket
+   `curatedbynat-instagram`. Instagram's own picture links expire within days, so the copies are needed.
+   It stores a cleaned first sentence of each caption as alt text (never a caption that mentions prices).
+3. When the list changed, it calls a Workers Builds deploy hook, so the site rebuilds.
+4. `integrations/instagram-feed.mjs` runs at the start of every build in Cloudflare. It downloads the list
+   and pictures from `/api/instagram/feed` and `/api/instagram/image/<file>` into git-ignored folders, and
+   from there they go through the normal photo pipeline (AVIF/WebP, srcset, lazy loading).
+5. If the feed is empty, has fewer than four usable posts, or anything fails, the build quietly uses the
+   photos Nat picked. A failure never affects the live site.
+
+If the token cannot refresh, or expires within 10 days, hello@curatedbynat.com gets a plain-language email
+(at most one every three days). Inspect the job's last run with:
+
+```bash
+npx wrangler d1 execute curatedbynat-inquiries --remote --command "SELECT key, value, updated_at FROM instagram_state WHERE key IN ('last_sync')"
+```
+
+### One-time setup
+
+Order matters: create the bucket and run the migration *before* the code that uses them is merged.
+
+1. `npx wrangler r2 bucket create curatedbynat-instagram` (Cloudflare may ask to enable R2; the free tier is far
+   above this site's use).
+2. `npx wrangler d1 migrations apply curatedbynat-inquiries --remote`
+3. Merge to `main` (deploys). The cron starts, finds no token and does nothing.
+4. **Nat** creates the connection (she needs to be logged in as the @curated.bynat account, which must be a
+   Business or Creator account):
+   1. Go to developers.facebook.com, log in with Facebook and register as a developer.
+   2. My Apps > Create App. Pick the use case for managing messaging and content on Instagram (Meta
+      renames these screens now and then; the goal is an app with the **Instagram API with Instagram Login**).
+   3. In the app dashboard open Instagram > API setup with Instagram login > Add account, and log in as
+      @curated.bynat.
+   4. Click **Generate token** next to the account and copy it. It needs the `instagram_business_basic`
+      permission, which is the default. No app review is needed because the app only reads Nat's own account.
+5. **Matt** stores the token: `npx wrangler secret put INSTAGRAM_ACCESS_TOKEN` and pastes it.
+6. **Matt** creates the deploy hook: Cloudflare > Workers & Pages > curatedbynat > Settings > Builds > Deploy
+   Hooks > Add (branch `main`), then `npx wrangler secret put DEPLOY_HOOK_URL` with its URL.
+7. The next run (within six hours) fills the bucket and triggers a rebuild. To run it immediately from your
+   Mac, put the same values in `.dev.vars` and run `npx wrangler dev --remote --test-scheduled`, then open
+   `http://localhost:8787/cdn-cgi/handler/scheduled` (this uses the real D1 and R2).
+
+A new token is only needed if the connection lapses (for example Nat changes her Instagram password or
+removes the app). Repeat steps 4.3 to 5.
 
 ## Reading the inquiry backup
 

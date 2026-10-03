@@ -5,6 +5,7 @@ import node from '@astrojs/node';
 import react from '@astrojs/react';
 import keystatic from '@keystatic/astro';
 import sitemap from '@astrojs/sitemap';
+import instagramFeed from './integrations/instagram-feed.mjs';
 import pruneUnreferencedImages from './integrations/prune-unreferenced-images.mjs';
 
 // `npm run dev:cms` edits content files locally with Keystatic, which needs Node's file
@@ -22,6 +23,7 @@ export default defineConfig({
         ? node({ mode: 'standalone' })
         : cloudflare({ imageService: 'compile', prerenderEnvironment: 'node' }),
     integrations: [
+        instagramFeed(),
         react(),
         keystatic(),
         sitemap({
