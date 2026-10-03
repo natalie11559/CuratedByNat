@@ -19,6 +19,8 @@ export default defineConfig({
     // about.html rather than about/index.html, so Cloudflare serves /about directly instead of redirecting to /about/.
     build: { format: 'file' },
     session: false,
+    // The toolbar injects inline scripts, which Studio's strict Content-Security-Policy would block while testing.
+    devToolbar: { enabled: false },
     adapter: isLocalCms
         ? node({ mode: 'standalone' })
         : cloudflare({ imageService: 'compile', prerenderEnvironment: 'node' }),
@@ -27,10 +29,10 @@ export default defineConfig({
         react(),
         keystatic(),
         sitemap({
-            // Keep the editor, the form API, the post-submit page and the 404 page out of search.
+            // Keep the editor, Studio, the form API, the post-submit page and the 404 page out of search.
             filter: (page) => {
                 const { pathname } = new URL(page);
-                return !['/keystatic', '/api', '/inquire/thanks', '/404'].some(
+                return !['/keystatic', '/studio', '/api', '/cal', '/inquire/thanks', '/404'].some(
                     (excluded) => pathname === excluded || pathname.startsWith(`${excluded}/`),
                 );
             },

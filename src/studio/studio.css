@@ -1,0 +1,280 @@
+/* Studio: the private working tool. Same brand as the public site (tokens.css is added in front of this file),
+   but denser and calmer. Phone first. Every class starts with st- . */
+
+@font-face {
+    font-family: 'Libre Caslon Display';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/libre-caslon-display-400.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Mulish';
+    font-style: normal;
+    font-weight: 400 600;
+    font-display: swap;
+    src: url('/fonts/mulish-variable.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Mrs Saint Delafield';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/mrs-saint-delafield-400.woff2') format('woff2');
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+.st-body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.55;
+}
+
+.st-body a {
+    color: var(--color-accent-text);
+    text-underline-offset: 3px;
+}
+
+.st-body :focus-visible {
+    outline: 2px solid var(--color-button);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--color-focus-halo);
+}
+
+.st-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.st-skip {
+    position: absolute;
+    left: var(--space-4);
+    top: -100px;
+    z-index: 100;
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-button);
+    color: var(--color-on-dark);
+    border-radius: var(--radius-sm);
+}
+
+.st-skip:focus {
+    top: var(--space-3);
+}
+
+/* ---- Frame ---------------------------------------------------------------------------------------- */
+
+.st-app {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    /* Room for the bottom tab bar on phones. */
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+}
+
+.st-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-5);
+    padding-top: calc(var(--space-3) + env(safe-area-inset-top));
+    background: var(--color-surface);
+    border-bottom: var(--border-hairline);
+}
+
+.st-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 44px;
+    color: var(--color-text);
+    text-decoration: none;
+}
+
+.st-body .st-brand {
+    color: var(--color-text);
+}
+
+.st-brand__mark {
+    border-radius: var(--radius-full);
+}
+
+.st-brand__name {
+    font-family: var(--font-heading);
+    font-size: 20px;
+    line-height: 1;
+}
+
+.st-brand__script {
+    font-family: var(--font-script);
+    font-size: 30px;
+    line-height: 1;
+    color: var(--color-accent-text);
+}
+
+.st-header__user {
+    margin: 0;
+    font-size: 14px;
+    color: var(--color-text-muted);
+}
+
+.st-nav {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 20;
+    background: var(--color-surface);
+    border-top: var(--border-hairline);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.st-nav__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: space-around;
+}
+
+.st-nav__list > li {
+    flex: 1 1 0;
+}
+
+.st-body .st-nav__link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 56px;
+    padding: var(--space-2) var(--space-3);
+    color: var(--color-text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: none;
+}
+
+.st-body .st-nav__link[aria-current='page'] {
+    color: var(--color-button);
+    box-shadow: inset 0 3px 0 var(--color-button);
+}
+
+.st-main {
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: var(--space-6) var(--space-5) var(--space-10);
+    outline: none;
+}
+
+@media (min-width: 900px) {
+    .st-app {
+        grid-template-columns: 200px minmax(0, 1fr);
+        grid-template-rows: auto 1fr;
+        padding-bottom: 0;
+    }
+
+    .st-header {
+        grid-column: 1 / -1;
+        padding-inline: var(--space-8);
+    }
+
+    .st-nav {
+        position: static;
+        grid-row: 2;
+        border-top: 0;
+        border-right: var(--border-hairline);
+        padding: var(--space-5) 0;
+    }
+
+    .st-nav__list {
+        display: block;
+    }
+
+    .st-body .st-nav__link {
+        justify-content: flex-start;
+        min-height: 44px;
+        padding-inline: var(--space-6);
+    }
+
+    .st-body .st-nav__link[aria-current='page'] {
+        box-shadow: inset 3px 0 0 var(--color-button);
+        background: var(--color-bg-alt);
+    }
+
+    .st-main {
+        padding: var(--space-8) var(--space-8) var(--space-12);
+    }
+}
+
+/* ---- Content -------------------------------------------------------------------------------------- */
+
+.st-eyebrow {
+    margin: 0 0 var(--space-2);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+
+.st-title {
+    margin: 0 0 var(--space-6);
+    font-family: var(--font-heading);
+    font-weight: 400;
+    font-size: 36px;
+    line-height: 1.1;
+}
+
+.st-card {
+    background: var(--color-surface);
+    border: var(--border-hairline);
+    border-radius: var(--radius-sm);
+    padding: var(--space-5);
+}
+
+.st-card__title {
+    margin: 0 0 var(--space-2);
+    font-family: var(--font-heading);
+    font-weight: 400;
+    font-size: 22px;
+    line-height: 1.2;
+}
+
+.st-card p {
+    margin: 0;
+}
+
+.st-quiet {
+    margin: var(--space-6) 0 0;
+    font-size: 14px;
+    color: var(--color-text-muted);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .st-body a,
+    .st-nav__link {
+        transition: color 150ms var(--ease-out), background-color 150ms var(--ease-out);
+    }
+}

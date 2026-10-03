@@ -1,0 +1,25 @@
+---
+// Studio home. The shell for now: later phases fill it with today's follow-ups, events and balances.
+import StudioLayout from '../../layouts/StudioLayout.astro';
+import { firstNameFromEmail } from '../../lib/studio/people';
+
+export const prerender = false;
+
+const user = Astro.locals.studioUser;
+const today = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'America/New_York',
+}).format(new Date());
+---
+
+<StudioLayout title="Today" current="home">
+    <p class="st-eyebrow">{today}</p>
+    <h1 class="st-title">Hi, {user ? firstNameFromEmail(user.email) : 'there'}.</h1>
+    <section class="st-card" aria-labelledby="ready">
+        <h2 id="ready" class="st-card__title">Studio is open</h2>
+        <p>Your pipeline, calendar and clients are on their way. For now, this is just the front door.</p>
+    </section>
+    <p class="st-quiet"><a href="/cdn-cgi/access/logout">Sign out</a></p>
+</StudioLayout>

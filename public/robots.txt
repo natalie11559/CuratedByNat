@@ -1,5 +1,8 @@
 User-agent: *
 Allow: /
 Disallow: /api/
+Disallow: /api/studio
+Disallow: /studio
+Disallow: /cal/
 
 Sitemap: https://curatedbynat.com/sitemap-index.xml

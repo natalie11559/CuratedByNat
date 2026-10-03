@@ -9,3 +9,9 @@ TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
 # (see "Instagram feed" in README.md). Production: npx wrangler secret put INSTAGRAM_ACCESS_TOKEN
 # INSTAGRAM_ACCESS_TOKEN=
 # DEPLOY_HOOK_URL=
+
+# Studio (the private CRM) normally sits behind Cloudflare Access. For local development only, these two lines
+# skip the sign-in on localhost. They do nothing in a production build or on any other host.
+# STUDIO_DEV_EMAIL decides whose name Studio greets you with (hello@curatedbynat.com is Nat).
+STUDIO_DEV_BYPASS=1
+STUDIO_DEV_EMAIL=hello@curatedbynat.com
