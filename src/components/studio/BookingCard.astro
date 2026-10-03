@@ -12,9 +12,11 @@ interface Props {
     returnTo: string;
     today: string;
     eventDate: string | null;
+    /** True when the lead is booked but no signed contract has been uploaded yet. */
+    contractMissing?: boolean;
 }
 
-const { booking, packages, extras, returnTo, today, eventDate } = Astro.props;
+const { booking, packages, extras, returnTo, today, eventDate, contractMissing = false } = Astro.props;
 const { summary } = booking;
 const title = booking.package_name || 'Booking';
 const methodLabel = (method: string) => PAYMENT_METHODS.find((entry) => entry.id === method)?.label ?? method;
@@ -28,6 +30,14 @@ const prefix = `b-${booking.id.slice(0, 8)}`;
         <h2 class="st-card__title" id={`${prefix}-heading`}>{title}</h2>
         <span class:list={['st-pill', summary.status === 'paid_in_full' && 'st-pill--booked']}>{PAYMENT_STATUS_LABELS[summary.status]}</span>
     </div>
+
+    {
+        contractMissing && (
+            <p class="st-callout">
+                No signed contract yet. <a href="#files">Upload it under Files</a> when you have it.
+            </p>
+        )
+    }
 
     <dl class="st-dl st-money">
         {

@@ -50,7 +50,13 @@ async function guardStudio(context: Parameters<Parameters<typeof defineMiddlewar
     context.locals.studioUser = { email: authorization.email, via: authorization.via };
     const response = await next();
     const merged = new Headers(response.headers);
-    for (const [name, value] of Object.entries(headers)) merged.set(name, value);
+    // A PDF or picture is not a page and can't run scripts, but a strict page policy can stop the browser's own
+    // PDF viewer from opening it. Everything else keeps the strict policy.
+    const isDocument = /^(application\/pdf|image\/(jpeg|png|heic))\b/i.test(response.headers.get('content-type') ?? '');
+    for (const [name, value] of Object.entries(headers)) {
+        if (isDocument && name === 'Content-Security-Policy') continue;
+        merged.set(name, value);
+    }
     return new Response(response.body, { status: response.status, statusText: response.statusText, headers: merged });
 }
 

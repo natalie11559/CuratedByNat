@@ -1,11 +1,15 @@
 // Server-side helpers shared by Studio's pages and API routes. Uses `cloudflare:workers`, so it is not loaded by
 // the plain-Node unit tests; anything worth testing lives in the other modules.
 import { env } from 'cloudflare:workers';
-import type { D1Database } from '../cloudflare';
+import type { D1Database, R2Bucket } from '../cloudflare';
 import type { RawInput } from './validate';
 
 export function studioDb(): D1Database | null {
     return (env as unknown as { DB?: D1Database }).DB ?? null;
+}
+
+export function studioFiles(): R2Bucket | null {
+    return (env as unknown as { STUDIO_FILES?: R2Bucket }).STUDIO_FILES ?? null;
 }
 
 export function actorEmail(locals: App.Locals): string {
@@ -32,7 +36,7 @@ export function redirectTo(path: string, params: Record<string, string | undefin
     for (const [key, value] of Object.entries(params)) {
         if (value !== undefined) url.searchParams.set(key, value);
     }
-    return new Response(null, { status: 303, headers: { Location: `${url.pathname}${url.search}`, 'Cache-Control': 'no-store' } });
+    return new Response(null, { status: 303, headers: { Location: `${url.pathname}${url.search}${url.hash}`, 'Cache-Control': 'no-store' } });
 }
 
 export { env };

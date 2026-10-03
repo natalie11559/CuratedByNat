@@ -23,6 +23,8 @@ export const NOTICES: Record<string, string> = {
     'price-saved': 'Saved.',
     'price-hidden': 'Hidden. It stays on past bookings.',
     'price-shown': 'It is back on the list.',
+    'file-added': 'File saved.',
+    'file-removed': 'File removed. It is kept for 30 days in case you need it back.',
 };
 
 export const ERRORS: Record<string, string> = {
@@ -33,6 +35,11 @@ export const ERRORS: Record<string, string> = {
     'database-missing': "Studio's database isn't available right now.",
     'import-incomplete': "Some inquiries couldn't be added. They're still saved, and we'll keep trying.",
     'reason-needed': 'Pick a reason first.',
+    'file-missing': 'Choose a file first.',
+    'file-empty': 'That file is empty.',
+    'file-type': 'Studio keeps PDFs and photos (JPG, PNG or HEIC). That file looks like something else.',
+    'file-too-large': 'That file is over 25 MB. Try a smaller scan or photo.',
+    'storage-missing': "File storage isn't available right now.",
 };
 
 /** Labels for the form boxes named in `?invalid=first_name,email`. */

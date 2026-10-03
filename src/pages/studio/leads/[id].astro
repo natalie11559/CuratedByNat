@@ -5,11 +5,13 @@ import BookingCard from '../../../components/studio/BookingCard.astro';
 import BookingForm from '../../../components/studio/BookingForm.astro';
 import Notice from '../../../components/studio/Notice.astro';
 import OriginalInquiry from '../../../components/studio/OriginalInquiry.astro';
+import FilesCard from '../../../components/studio/FilesCard.astro';
 import LeadForm from '../../../components/studio/LeadForm.astro';
 import StagePill from '../../../components/studio/StagePill.astro';
 import StudioLayout from '../../../layouts/StudioLayout.astro';
 import { getBookingsForLead, listExtras, listPackages } from '../../../lib/studio/bookings';
 import { formatDate, formatDateRange, formatTimestamp, relativeDays, todayEastern } from '../../../lib/studio/dates';
+import { hasSignedContract, listFiles } from '../../../lib/studio/files';
 import { followUpStatus } from '../../../lib/studio/followup';
 import { isId } from '../../../lib/studio/messages';
 import { celebratingOf, fullName, getLead, getSettings, listActivities, listInquiriesForLead } from '../../../lib/studio/queries';
@@ -25,13 +27,15 @@ if (!db || !isId(id)) return Astro.redirect('/studio/pipeline?error=not-found', 
 const lead = await getLead(db, id, { includeDeleted: true });
 if (!lead) return Astro.redirect('/studio/pipeline?error=not-found', 303);
 
-const [activities, inquiries, settings, bookings, packages, extras] = await Promise.all([
+const [activities, inquiries, settings, bookings, packages, extras, files, contractOnFile] = await Promise.all([
     listActivities(db, id),
     listInquiriesForLead(db, id),
     getSettings(db),
     getBookingsForLead(db, id),
     listPackages(db),
     listExtras(db),
+    listFiles(db, id),
+    hasSignedContract(db, id),
 ]);
 const today = todayEastern();
 const followUp = followUpStatus(lead, { followUpDays: settings.followUpDays, today });
@@ -199,7 +203,7 @@ const details: [string, string][] = [
 
     {
         bookings.map((booking) => (
-            <BookingCard booking={booking} packages={packages} extras={extras} returnTo={pageUrl} today={today} eventDate={lead.event_date} />
+            <BookingCard booking={booking} packages={packages} extras={extras} returnTo={pageUrl} today={today} eventDate={lead.event_date} contractMissing={!contractOnFile && !isDeleted} />
         ))
     }
     {
@@ -213,6 +217,8 @@ const details: [string, string][] = [
             </section>
         )
     }
+
+    <FilesCard leadId={id} files={files} canUpload={!isDeleted} />
 
     <section class="st-card" aria-labelledby="timeline-heading">
         <h2 id="timeline-heading" class="st-card__title">Timeline</h2>
