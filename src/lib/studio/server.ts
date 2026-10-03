@@ -28,7 +28,8 @@ export function formInput(form: FormData): RawInput {
 
 /** Only Studio's own pages are valid places to go back to, so a form can't be used to send someone elsewhere. */
 export function safeStudioPath(value: string | null | undefined, fallback: string): string {
-    return typeof value === 'string' && /^\/studio(\/[A-Za-z0-9._~-]+)*(\?[A-Za-z0-9._~=&%,+-]*)?$/.test(value) ? value : fallback;
+    // No dot-only segments, so a path can't climb out of /studio.
+    return typeof value === 'string' && /^\/studio(\/(?!\.+(\/|\?|$))[A-Za-z0-9._~-]+)*(\?[A-Za-z0-9._~=&%,+-]*)?$/.test(value) ? value : fallback;
 }
 
 export function redirectTo(path: string, params: Record<string, string | undefined> = {}): Response {

@@ -40,6 +40,7 @@ describe('validateLeadFields', () => {
     });
 
     it('checks the email, the Instagram handle, the source and the choices', () => {
+        assert.ok(errorsOf({ ...good, instagram: '...' }).instagram);
         assert.ok(errorsOf({ ...good, email: 'nope' }).email);
         assert.ok(errorsOf({ ...good, instagram: 'not a handle!' }).instagram);
         assert.ok(errorsOf({ ...good, source: 'carrier-pigeon' }).source);

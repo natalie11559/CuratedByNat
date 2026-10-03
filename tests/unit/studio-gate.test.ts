@@ -162,3 +162,18 @@ describe('firstNameFromEmail', () => {
         assert.equal(firstNameFromEmail('@x.com'), 'there');
     });
 });
+
+describe('safeStudioPath', () => {
+    it('only goes back to Studio pages, and never climbs out of Studio', async () => {
+        // server.ts imports cloudflare:workers, so the pattern is read from the source and checked here.
+        const { readFileSync } = await import('node:fs');
+        const source = readFileSync(new URL('../../src/lib/studio/server.ts', import.meta.url), 'utf8');
+        const pattern = new RegExp(/\/\^(.+)\$\/\.test\(value\)/.exec(source)![1]!.replace(/^/, '^').concat('$'));
+        for (const good of ['/studio', '/studio/pipeline', '/studio/leads/123e4567-e89b-42d3-a456-426614174000', '/studio/pipeline?stage=new&source=tiktok', '/studio/calendar/day/2026-10-17']) {
+            assert.equal(pattern.test(good), true, good);
+        }
+        for (const bad of ['https://evil.example/studio', '//evil.example', '/studio/../../evil', '/studio/./x', '/studio/..', '/studio//x', '/elsewhere', 'javascript:alert(1)', '/studio/x#frag', '/studio/\\evil', '']) {
+            assert.equal(pattern.test(bad), false, bad);
+        }
+    });
+});

@@ -3,6 +3,7 @@
 // Pure apart from D1, and tested against real SQLite.
 import type { D1Database, D1Statement } from '../cloudflare.ts';
 import type { InquirySubmission } from '../inquiry/validate.ts';
+import { normalizeInstagram } from './validate.ts';
 import { CLOSED_STAGES } from './vocab.ts';
 
 export interface InquiryRecord {
@@ -63,6 +64,12 @@ export function submissionFromPayload(payload: string): InquirySubmission | null
 
 const CLOSED_LIST = CLOSED_STAGES.map((stage) => `'${stage}'`).join(', ');
 
+/** A handle the website visitor typed, made safe to link to. Anything that isn't a plain handle is left out. */
+export function instagramHandle(typed: string): string {
+    const handle = normalizeInstagram(typed);
+    return /^(?=.*[A-Za-z0-9])[A-Za-z0-9._]{1,30}$/.test(handle) ? handle : '';
+}
+
 function insertLead(db: D1Database, leadId: string, inquiry: InquiryRecord): D1Statement {
     const { submission } = inquiry;
     return db
@@ -81,7 +88,7 @@ function insertLead(db: D1Database, leadId: string, inquiry: InquiryRecord): D1S
             submission.email,
             emailKey(submission.email),
             submission.phone,
-            submission.instagram,
+            instagramHandle(submission.instagram),
             submission.inquirer,
             submission.foundVia,
             JSON.stringify(submission.celebrating),
@@ -162,7 +169,7 @@ export async function linkInquiryToLead(
                                 end_date = COALESCE(end_date, ?7)
                              WHERE id = ?1`,
                         )
-                        .bind(open.id, now, submission.phone, submission.instagram, submission.location, submission.eventDate, submission.endDate),
+                        .bind(open.id, now, submission.phone, instagramHandle(submission.instagram), submission.location, submission.eventDate, submission.endDate),
                 ]);
                 return { leadId: open.id, created: false };
             }

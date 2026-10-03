@@ -67,7 +67,7 @@ describe('linkInquiryToLead', () => {
         assert.equal(lead.email, 'Emory@Example.com');
         assert.equal(lead.email_key, 'emory@example.com');
         assert.equal(lead.phone, '(404) 555-0100');
-        assert.equal(lead.instagram, '@emory');
+        assert.equal(lead.instagram, 'emory'); // stored as a plain handle, without the @
         assert.equal(lead.inquirer_role, "I'm the bride");
         assert.equal(lead.source, 'website');
         assert.equal(lead.found_via, 'Instagram');
@@ -250,5 +250,26 @@ describe('payload reading', () => {
 
     it('normalises email for matching', () => {
         assert.equal(emailKey('  Hello@Example.COM '), 'hello@example.com');
+    });
+});
+
+describe('Instagram handles from the website form', () => {
+    it('are stored as plain handles, and anything else is left out', async () => {
+        const { instagramHandle } = await import('../../src/lib/studio/leads.ts');
+        assert.equal(instagramHandle('@emory.co'), 'emory.co');
+        assert.equal(instagramHandle('https://www.instagram.com/emory.co/?igsh=1'), 'emory.co');
+        for (const bad of ['', '../../evil', 'a b', 'x@evil.com/path', 'javascript:alert(1)', 'a'.repeat(40), '@']) {
+            assert.equal(instagramHandle(bad), '', bad);
+        }
+    });
+
+    it('arrive on the lead cleaned up', async () => {
+        const db = createTestD1();
+        const messy = await saveInquiry(db, { instagram: 'javascript:alert(1)' });
+        const result = await linkInquiryToLead(db, messy);
+        assert.equal((db.raw.prepare('SELECT instagram FROM leads WHERE id = ?').get(result.leadId) as { instagram: string }).instagram, '');
+        const tidy = await saveInquiry(db, { email: 'other@example.com', instagram: '@Other.Handle' });
+        const second = await linkInquiryToLead(db, tidy);
+        assert.equal((db.raw.prepare('SELECT instagram FROM leads WHERE id = ?').get(second.leadId) as { instagram: string }).instagram, 'Other.Handle');
     });
 });

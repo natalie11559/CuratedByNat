@@ -75,7 +75,7 @@ export function validateLeadFields(raw: RawInput): Checked<LeadFields> {
     if (tooLong(phone, 40)) errors.phone = 'That phone number is too long.';
 
     const instagram = normalizeInstagram(str(raw, 'instagram'));
-    if (!/^[A-Za-z0-9._]{0,30}$/.test(instagram)) errors.instagram = "That doesn't look like an Instagram handle.";
+    if (instagram !== '' && !/^(?=.*[A-Za-z0-9])[A-Za-z0-9._]{1,30}$/.test(instagram)) errors.instagram = "That doesn't look like an Instagram handle.";
 
     const source = (str(raw, 'source') || 'other') as SourceId;
     if (!SOURCES.some((entry) => entry.id === source)) errors.source = 'Pick where this lead came from.';
