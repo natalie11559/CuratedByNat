@@ -10,6 +10,7 @@ import ServiceCardGrid from '../components/ServiceCardGrid.astro';
 import TextImageSection from '../components/TextImageSection.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { home, instagram, site } from '../lib/content';
+import { homeFeedPhotos } from '../lib/instagramFeed';
 import { focusToObjectPosition } from '../lib/images';
 
 const { hero, intro, capturing, servicesSection, closing } = home;
@@ -30,6 +31,9 @@ const heroPositions = [
 // The 3:4 photo covers the inset block: 32px narrower than the screen from 768px up, 24px on
 // phones, and never narrower than 420px (the 560px-tall phone block times 3/4).
 const heroSizes = '(min-width: 768px) calc(100vw - 32px), (min-width: 444px) calc(100vw - 24px), 420px';
+// Nat's latest Instagram posts when the automatic feed has enough of them, otherwise the four photos she picked.
+const feedTiles = homeFeedPhotos().map((photo) => ({ ...photo, focusVertical: 'upper', focusHorizontal: 'center' }));
+const instagramTiles = feedTiles.length > 0 ? feedTiles : instagram.tiles;
 ---
 
 <BaseLayout title={home.seo.title} description={home.seo.description} path="/" current="home">
@@ -108,7 +112,7 @@ const heroSizes = '(min-width: 768px) calc(100vw - 32px), (min-width: 444px) cal
         buttonLabel={instagram.buttonLabel}
         buttonHref={site.social.instagramUrl}
         handle={site.social.instagramHandle}
-        tiles={instagram.tiles}
+        tiles={instagramTiles}
         tileHref={site.social.instagramUrl}
     />
 

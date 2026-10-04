@@ -56,7 +56,7 @@ export const site = singleton({
             {
                 label: 'Closing banner slideshow photos',
                 description:
-                    'The photos that slide slowly behind "Inquire now" at the bottom of Home and Services. Use 4 to 12 photos. Drag to reorder. Text sits on top, so busy or very bright photos are harder to read over.',
+                    'The photos that slide slowly behind "Inquire now" at the bottom of Home and Services. Use 4 to 12 photos. Drag to reorder. These are the backup: with "Instagram feed (automatic photos)" switched on, your latest Instagram posts slide here instead. Text sits on top, so busy or very bright photos are harder to read over.',
                 itemLabel: (props) =>
                     props.fields.image.value ? props.fields.name.value.trim() || 'Slideshow photo' : '⚠ Needs a photo',
                 validation: { length: { min: 4, max: 12 } },

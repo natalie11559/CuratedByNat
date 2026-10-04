@@ -1,7 +1,9 @@
 // Receives inquiries from the form on /inquire. Runs on Cloudflare Workers; the rest of the site is static.
-// Order: size limit, honeypot, timing check, Turnstile, validation, save to D1, email Nat through Resend.
+// Order: size limit, honeypot, timing check, Turnstile, validation, save to D1, email Nat through Resend,
+// then add the inquiry to Studio as a lead (which can never affect the answer the visitor gets).
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
+import type { D1Database } from '../../lib/cloudflare';
 import { inquiryForm } from '../../lib/content';
 import { buildInquiryEmail, celebrationLabels, sendWithResend } from '../../lib/inquiry/email';
 import {
@@ -19,6 +21,7 @@ import {
     type InquiryInput,
     type InquirySubmission,
 } from '../../lib/inquiry/validate';
+import { tryLinkInquiry } from '../../lib/studio/leads';
 
 export const prerender = false;
 
@@ -30,15 +33,6 @@ const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/sit
 const TURNSTILE_ACTION = 'inquiry';
 const THANKS_PATH = '/inquire/thanks';
 const ERROR_PATH = '/inquire?status=error';
-
-interface D1Statement {
-    bind(...values: unknown[]): D1Statement;
-    run(): Promise<unknown>;
-}
-
-interface D1Database {
-    prepare(query: string): D1Statement;
-}
 
 interface RateLimiter {
     limit(options: { key: string }): Promise<{ success: boolean }>;
@@ -366,6 +360,9 @@ export const POST: APIRoute = async ({ request }) => {
     // The saved row is the backup, so a failed email still counts as a successful inquiry.
     const delivery = await emailInquiry(id, createdAt, result.data);
     await recordDelivery(db, id, delivery);
+
+    // The inquiry is saved and emailed by now. If this step fails, Studio flags the inquiry for a retry.
+    await tryLinkInquiry(db, { id, createdAt, submission: result.data });
 
     return reply(kind, 200, success);
 };

@@ -1,0 +1,31 @@
+---
+// What to add: a lead, a calendar item, or a note about someone.
+import StudioLayout from '../../layouts/StudioLayout.astro';
+
+export const prerender = false;
+---
+
+<StudioLayout title="Add" current="home">
+    <p class="st-eyebrow">Add</p>
+    <h1 class="st-title">What would you like to add?</h1>
+    <ul class="st-choices" role="list">
+        <li>
+            <a class="st-choice" href="/studio/leads/new">
+                <span class="st-choice__title">A lead</span>
+                <span class="st-choice__sub">Someone new who messaged, was referred, or inquired somewhere else.</span>
+            </a>
+        </li>
+        <li>
+            <a class="st-choice" href="/studio/calendar/new">
+                <span class="st-choice__title">A calendar item</span>
+                <span class="st-choice__sub">A consultation, a delivery date, a reminder, or something personal.</span>
+            </a>
+        </li>
+        <li>
+            <a class="st-choice" href="/studio/search">
+                <span class="st-choice__title">A note about someone</span>
+                <span class="st-choice__sub">Find them, then add the note or log your call on their page.</span>
+            </a>
+        </li>
+    </ul>
+</StudioLayout>

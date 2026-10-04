@@ -5,6 +5,7 @@
 import Button from './Button.astro';
 import Photo from './Photo.astro';
 import { site } from '../lib/content';
+import { slideshowFeedPhotos } from '../lib/instagramFeed';
 
 interface Props {
     variant?: 'photo' | 'blush';
@@ -32,7 +33,13 @@ const {
 } = Astro.props;
 
 const isPhoto = variant === 'photo';
-const slideshowPhotos = isPhoto ? site.closingPhotos.filter((photo) => Boolean(photo.image)) : [];
+// Nat's latest Instagram posts when the automatic feed has enough of them, otherwise the slideshow photos she picked.
+const feedPhotos = isPhoto ? slideshowFeedPhotos() : [];
+const slideshowPhotos = isPhoto
+    ? feedPhotos.length > 0
+        ? feedPhotos
+        : site.closingPhotos.filter((photo) => Boolean(photo.image))
+    : [];
 const secondsPerPhoto = 6;
 
 // Each tile is a quarter of the band (half on phones), and the band is at least 420px (440px)

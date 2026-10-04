@@ -1,0 +1,87 @@
+---
+// The frame around every Studio page: header, navigation (bottom tabs on phones, a side column on
+// laptops) and the content. Studio pages never carry their own style or script blocks, because Astro would
+// publish those as public files. Styles and the small script come from guarded routes instead
+// (/studio/app.css from src/studio/studio.css, /studio/app.js from src/studio/client.js).
+import { firstNameFromEmail } from '../lib/studio/people';
+
+export type StudioSection = 'home' | 'pipeline' | 'calendar' | 'clients' | 'settings';
+
+interface Props {
+    title: string;
+    current?: StudioSection;
+    /** Lets the page use the full width, for the pipeline board. */
+    wide?: boolean;
+}
+
+const { title, current = 'home', wide = false } = Astro.props;
+const user = Astro.locals.studioUser;
+
+const navigation: { id: StudioSection; label: string; href: string }[] = [
+    { id: 'home', label: 'Home', href: '/studio' },
+    { id: 'pipeline', label: 'Pipeline', href: '/studio/pipeline' },
+    { id: 'calendar', label: 'Calendar', href: '/studio/calendar' },
+    { id: 'clients', label: 'Clients', href: '/studio/clients' },
+    { id: 'settings', label: 'Settings', href: '/studio/settings' },
+];
+---
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="robots" content="noindex, nofollow" />
+        <meta name="theme-color" content="#F8F4EE" />
+        <title>{title} | Curated by Nat Studio</title>
+        <link rel="icon" href="/favicon-32x32.png" sizes="32x32" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/studio/manifest.webmanifest" crossorigin="use-credentials" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="Studio" />
+        <link rel="stylesheet" href="/studio/app.css" />
+        <script src="/studio/app.js" defer></script>
+    </head>
+    <body class="st-body">
+        <a class="st-skip" href="#main">Skip to content</a>
+        <div class="st-app">
+            <header class="st-header">
+                <a class="st-brand" href="/studio">
+                    <img class="st-brand__mark" src="/icon-192.png" alt="" width="36" height="36" />
+                    <span class="st-brand__name">Curated by Nat</span>
+                    <span class="st-brand__script">Studio</span>
+                </a>
+                <div class="st-header__actions">
+                    <a class="st-header__link" href="/studio/search">Search</a>
+                    {
+                        user && (
+                            <p class="st-header__user">
+                                <span class="st-visually-hidden">Signed in as </span>
+                                {firstNameFromEmail(user.email)}
+                            </p>
+                        )
+                    }
+                </div>
+            </header>
+            <nav class="st-nav" aria-label="Studio">
+                <ul class="st-nav__list">
+                    {
+                        navigation.map((item) => (
+                            <li>
+                                <a class="st-nav__link" href={item.href} aria-current={item.id === current ? 'page' : undefined}>
+                                    {item.label}
+                                </a>
+                            </li>
+                        ))
+                    }
+                </ul>
+            </nav>
+            <main id="main" class:list={['st-main', wide && 'st-main--wide']} tabindex="-1">
+                <slot />
+            </main>
+            <a class="st-fab" href="/studio/add" aria-label="Add">
+                <span aria-hidden="true">+</span>
+            </a>
+        </div>
+    </body>
+</html>

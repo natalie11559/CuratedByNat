@@ -1,0 +1,121 @@
+---
+// The pipeline. On a phone: pick a stage and see its cards. On a laptop: every stage side by side.
+import LeadCard from '../../components/studio/LeadCard.astro';
+import Notice from '../../components/studio/Notice.astro';
+import StudioLayout from '../../layouts/StudioLayout.astro';
+import { formatMonth, todayEastern } from '../../lib/studio/dates';
+import { getSettings, listEventMonths, listLeads } from '../../lib/studio/queries';
+import { studioDb } from '../../lib/studio/server';
+import { CELEBRATING, LOST_STAGE, SOURCES, STAGES } from '../../lib/studio/vocab';
+
+export const prerender = false;
+
+const db = studioDb();
+if (!db) return Astro.redirect('/studio?error=database-missing', 303);
+
+const params = Astro.url.searchParams;
+const columns = [...STAGES, LOST_STAGE];
+const requestedStage = params.get('stage') ?? '';
+const activeStage = columns.some((column) => column.id === requestedStage) ? requestedStage : 'new';
+const filters = {
+    celebrating: CELEBRATING.some((entry) => entry.id === params.get('celebrating')) ? params.get('celebrating')! : '',
+    source: SOURCES.some((entry) => entry.id === params.get('source')) ? params.get('source')! : '',
+    month: /^\d{4}-\d{2}$/.test(params.get('month') ?? '') ? params.get('month')! : '',
+};
+
+const [leads, months, settings] = await Promise.all([
+    listLeads(db, { celebrating: filters.celebrating || undefined, source: filters.source || undefined, month: filters.month || undefined }),
+    listEventMonths(db),
+    getSettings(db),
+]);
+const today = todayEastern();
+const byStage = Object.fromEntries(columns.map((column) => [column.id, leads.filter((lead) => lead.stage === column.id)]));
+const hasFilters = Boolean(filters.celebrating || filters.source || filters.month);
+const query = (stage: string) => {
+    const next = new URLSearchParams({ stage });
+    for (const [key, value] of Object.entries(filters)) if (value) next.set(key, value);
+    return `/studio/pipeline?${next}`;
+};
+const returnTo = query(activeStage);
+---
+
+<StudioLayout title="Pipeline" current="pipeline" wide>
+    <div class="st-page-head">
+        <div>
+            <p class="st-eyebrow">Everyone you're talking to</p>
+            <h1 class="st-title">Pipeline</h1>
+        </div>
+        <a class="st-button st-button--primary" href="/studio/leads/new">Add a lead</a>
+    </div>
+    <Notice />
+
+    <details class="st-details st-filter-details" open={hasFilters}>
+        <summary class="st-details__summary">{hasFilters ? 'Filters (on)' : 'Filter'}</summary>
+    <form class="st-filters" method="get" action="/studio/pipeline" aria-label="Filter the pipeline">
+        <input type="hidden" name="stage" value={activeStage} />
+        <div class="st-field">
+            <label class="st-label" for="filter-celebrating">Celebrating</label>
+            <select class="st-select" id="filter-celebrating" name="celebrating">
+                <option value="">Anything</option>
+                {CELEBRATING.map((entry) => <option value={entry.id} selected={filters.celebrating === entry.id}>{entry.label}</option>)}
+            </select>
+        </div>
+        <div class="st-field">
+            <label class="st-label" for="filter-source">Came from</label>
+            <select class="st-select" id="filter-source" name="source">
+                <option value="">Anywhere</option>
+                {SOURCES.map((entry) => <option value={entry.id} selected={filters.source === entry.id}>{entry.label}</option>)}
+            </select>
+        </div>
+        <div class="st-field">
+            <label class="st-label" for="filter-month">Event month</label>
+            <select class="st-select" id="filter-month" name="month">
+                <option value="">Any month</option>
+                {months.map((month) => <option value={month} selected={filters.month === month}>{formatMonth(month)}</option>)}
+            </select>
+        </div>
+        <div class="st-filters__actions">
+            <button class="st-button st-button--secondary" type="submit">Filter</button>
+            {hasFilters && <a class="st-button st-button--quiet" href={`/studio/pipeline?stage=${activeStage}`}>Clear</a>}
+        </div>
+    </form>
+    </details>
+    <p class="st-quiet st-linkrow"><a href="/studio/search">Search by name, email or phone</a></p>
+
+    <nav class="st-stagebar" aria-label="Stages">
+        <ul class="st-stagebar__list">
+            {
+                columns.map((column) => (
+                    <li>
+                        <a class="st-stagebar__link" href={query(column.id)} aria-current={column.id === activeStage ? 'page' : undefined}>
+                            {column.label} <span class="st-stagebar__count">{byStage[column.id]!.length}</span>
+                        </a>
+                    </li>
+                ))
+            }
+        </ul>
+    </nav>
+
+    <div class="st-board">
+        {
+            columns.map((column) => (
+                <section class="st-column" data-active={column.id === activeStage ? '' : undefined} aria-labelledby={`column-${column.id}`}>
+                    <h2 class="st-column__title" id={`column-${column.id}`}>
+                        {column.label} <span class="st-stagebar__count">{byStage[column.id]!.length}</span>
+                    </h2>
+                    {byStage[column.id]!.length === 0 ? (
+                        <p class="st-quiet">{hasFilters ? 'Nobody here with those filters.' : 'Nobody here right now.'}</p>
+                    ) : (
+                        <ul class="st-cards" role="list">
+                            {byStage[column.id]!.map((lead) => (
+                                <li>
+                                    <LeadCard lead={lead} today={today} followUpDays={settings.followUpDays} returnTo={returnTo} showMove={lead.stage !== 'lost'} />
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
+            ))
+        }
+    </div>
+</StudioLayout>

@@ -1,0 +1,99 @@
+---
+// Everyone, in any stage: search, sort, and export to a spreadsheet.
+import Notice from '../../components/studio/Notice.astro';
+import StagePill from '../../components/studio/StagePill.astro';
+import StudioLayout from '../../layouts/StudioLayout.astro';
+import { listClients, SORTS, type SortId } from '../../lib/studio/clients';
+import { formatDateRange, formatShortDate } from '../../lib/studio/dates';
+import { celebratingOf, fullName } from '../../lib/studio/queries';
+import { studioDb } from '../../lib/studio/server';
+import { celebratingLabels, LOST_STAGE, SOURCES, STAGES } from '../../lib/studio/vocab';
+
+export const prerender = false;
+
+const db = studioDb();
+if (!db) return Astro.redirect('/studio?error=database-missing', 303);
+
+const params = Astro.url.searchParams;
+const q = (params.get('q') ?? '').trim().slice(0, 100);
+const stages = [...STAGES, LOST_STAGE];
+const stage = stages.some((entry) => entry.id === params.get('stage')) ? params.get('stage')! : '';
+const sort: SortId = SORTS.some((entry) => entry.id === params.get('sort')) ? (params.get('sort') as SortId) : 'name';
+const dir = params.get('dir') === 'desc' ? 'desc' : 'asc';
+const clients = await listClients(db, { q, stage: stage || undefined, sort, dir });
+
+const query = new URLSearchParams();
+if (q) query.set('q', q);
+if (stage) query.set('stage', stage);
+query.set('sort', sort);
+query.set('dir', dir);
+const sourceLabel = (id: string) => SOURCES.find((entry) => entry.id === id)?.label ?? id;
+---
+
+<StudioLayout title="Clients" current="clients">
+    <div class="st-page-head">
+        <div>
+            <p class="st-eyebrow">Everyone, in every stage</p>
+            <h1 class="st-title">Clients</h1>
+        </div>
+        <a class="st-button st-button--secondary" href={`/api/studio/clients.csv?${query}`}>Export to a spreadsheet</a>
+    </div>
+    <Notice />
+
+    <form class="st-filters st-filters--clients" method="get" action="/studio/clients" role="search" aria-label="Find clients">
+        <div class="st-field">
+            <label class="st-label" for="clients-q">Name, email, phone or Instagram</label>
+            <input class="st-input" id="clients-q" name="q" type="search" value={q} maxlength="100" autocomplete="off" />
+        </div>
+        <div class="st-field">
+            <label class="st-label" for="clients-stage">Stage</label>
+            <select class="st-select" id="clients-stage" name="stage">
+                <option value="">Every stage</option>
+                {stages.map((entry) => <option value={entry.id} selected={stage === entry.id}>{entry.label}</option>)}
+            </select>
+        </div>
+        <div class="st-field">
+            <label class="st-label" for="clients-sort">Sort by</label>
+            <select class="st-select" id="clients-sort" name="sort">
+                {SORTS.map((entry) => <option value={entry.id} selected={sort === entry.id}>{entry.label}</option>)}
+            </select>
+        </div>
+        <div class="st-field">
+            <label class="st-label" for="clients-dir">Order</label>
+            <select class="st-select" id="clients-dir" name="dir">
+                <option value="asc" selected={dir === 'asc'}>{sort === 'created' || sort === 'event' ? 'Earliest first' : 'A to Z'}</option>
+                <option value="desc" selected={dir === 'desc'}>{sort === 'created' || sort === 'event' ? 'Latest first' : 'Z to A'}</option>
+            </select>
+        </div>
+        <div class="st-filters__actions">
+            <button class="st-button st-button--primary" type="submit">Show</button>
+        </div>
+    </form>
+
+    <p class="st-quiet" aria-live="polite">{clients.length} {clients.length === 1 ? 'client' : 'clients'}{q || stage ? ' match' : ''}</p>
+
+    {
+        clients.length === 0 ? (
+            <p class="st-quiet">Nobody here yet. <a href="/studio/leads/new">Add a lead</a> or wait for the next inquiry.</p>
+        ) : (
+            <ul class="st-cards" role="list">
+                {clients.map((client) => (
+                    <li>
+                        <article class="st-lead-card">
+                            <a class="st-lead-card__link" href={`/studio/leads/${client.id}`}>
+                                <span class="st-lead-card__name">{fullName(client)}</span>
+                                <span class="st-lead-card__meta">
+                                    {[celebratingLabels(celebratingOf(client)).join(', '), client.event_date ? formatDateRange(client.event_date, client.end_date) : client.date_not_set ? 'Date not set yet' : ''].filter(Boolean).join(' · ')}
+                                </span>
+                                <span class="st-lead-card__meta">
+                                    {sourceLabel(client.source)} · Added {formatShortDate(client.created_at.slice(0, 10))}
+                                </span>
+                                <span><StagePill stage={client.stage} /></span>
+                            </a>
+                        </article>
+                    </li>
+                ))}
+            </ul>
+        )
+    }
+</StudioLayout>

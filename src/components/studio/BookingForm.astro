@@ -1,0 +1,108 @@
+---
+// The booking details: package, extras, travel, total, retainer and when the balance is due. Used to book a client
+// and to edit a booking. No script: a blank total means "add up the package, extras and travel".
+import type { BookingView, ExtraRow, PackageRow } from '../../lib/studio/bookings';
+import { formatCents, toDollarInput } from '../../lib/studio/money';
+import { suggestedBalanceDueDate } from '../../lib/studio/validate';
+
+interface Props {
+    action: string;
+    returnTo: string;
+    packages: readonly PackageRow[];
+    extras: readonly ExtraRow[];
+    submitLabel: string;
+    idPrefix: string;
+    /** The booking being edited, if any. */
+    booking?: BookingView;
+    eventDate?: string | null;
+}
+
+const { action, returnTo, packages, extras, submitLabel, idPrefix, booking, eventDate = null } = Astro.props;
+const id = (name: string) => `${idPrefix}-${name}`;
+const isCustom = Boolean(booking && !booking.package_id && booking.package_name);
+const selectedPackage = booking ? (booking.package_id ?? (isCustom ? 'custom' : '')) : '';
+const quantityOf = (extraId: string) => booking?.extras.find((entry) => entry.extra_id === extraId)?.quantity ?? 0;
+const dueDate = booking ? (booking.balance_due_date ?? '') : suggestedBalanceDueDate(eventDate);
+---
+
+<form class="st-form" method="post" action={action}>
+    <input type="hidden" name="return_to" value={returnTo} />
+
+    <div class="st-field">
+        <label class="st-label" for={id('package')}>Package</label>
+        <select class="st-select" id={id('package')} name="package_id">
+            <option value="" selected={selectedPackage === ''}>No package</option>
+            {
+                packages.map((entry) => (
+                    <option value={entry.id} selected={selectedPackage === entry.id}>
+                        {entry.name} ({formatCents(entry.price_cents)})
+                    </option>
+                ))
+            }
+            <option value="custom" selected={selectedPackage === 'custom'}>Something custom…</option>
+        </select>
+        {packages.length === 0 && <p class="st-hint">No packages yet. Add them under Settings, or pick Something custom.</p>}
+    </div>
+    <div class="st-field-row">
+        <div class="st-field">
+            <label class="st-label" for={id('custom_name')}>Custom package name <span class="st-optional">(only for custom)</span></label>
+            <input class="st-input" id={id('custom_name')} name="custom_name" type="text" maxlength="100" autocomplete="off" value={isCustom ? booking!.package_name : ''} />
+        </div>
+        <div class="st-field">
+            <label class="st-label" for={id('custom_price')}>Custom price <span class="st-optional">(only for custom)</span></label>
+            <input class="st-input" id={id('custom_price')} name="custom_price" type="text" inputmode="decimal" autocomplete="off" placeholder="0" value={isCustom ? toDollarInput(booking!.package_price_cents) : ''} />
+        </div>
+    </div>
+
+    {
+        extras.length > 0 && (
+            <fieldset class="st-fieldset">
+                <legend class="st-label">Extras <span class="st-optional">(how many of each)</span></legend>
+                <div class="st-extras">
+                    {extras.map((extra) => (
+                        <div class="st-extra">
+                            <label class="st-extra__label" for={id(`extra-${extra.id}`)}>
+                                {extra.name} <span class="st-optional">({formatCents(extra.price_cents)} each)</span>
+                            </label>
+                            <input class="st-input st-input--small" id={id(`extra-${extra.id}`)} name={`extra_${extra.id}`} type="number" inputmode="numeric" min="0" max="20" step="1" value={quantityOf(extra.id) || ''} placeholder="0" />
+                        </div>
+                    ))}
+                </div>
+            </fieldset>
+        )
+    }
+
+    <div class="st-field-row">
+        <div class="st-field">
+            <label class="st-label" for={id('travel_fee')}>Travel fee <span class="st-optional">(optional)</span></label>
+            <input class="st-input" id={id('travel_fee')} name="travel_fee" type="text" inputmode="decimal" autocomplete="off" placeholder="0" value={booking && booking.travel_fee_cents > 0 ? toDollarInput(booking.travel_fee_cents) : ''} />
+        </div>
+        <div class="st-field">
+            <label class="st-label" for={id('travel_note')}>What the travel covers <span class="st-optional">(optional)</span></label>
+            <input class="st-input" id={id('travel_note')} name="travel_note" type="text" maxlength="200" autocomplete="off" value={booking?.travel_fee_note ?? ''} />
+        </div>
+    </div>
+    <p class="st-hint">Travel fees may apply for locations outside the local service area.</p>
+
+    <div class="st-field-row">
+        <div class="st-field">
+            <label class="st-label" for={id('total')}>Total <span class="st-optional">(leave blank to add it up)</span></label>
+            <input class="st-input" id={id('total')} name="total" type="text" inputmode="decimal" autocomplete="off" placeholder="Package + extras + travel" value={booking ? toDollarInput(booking.total_cents) : ''} />
+        </div>
+        <div class="st-field">
+            <label class="st-label" for={id('retainer')}>Retainer <span class="st-optional">(optional)</span></label>
+            <input class="st-input" id={id('retainer')} name="retainer" type="text" inputmode="decimal" autocomplete="off" placeholder="0" value={booking && booking.retainer_cents > 0 ? toDollarInput(booking.retainer_cents) : ''} />
+        </div>
+    </div>
+    <div class="st-field">
+        <label class="st-label" for={id('balance_due_date')}>Balance due on <span class="st-optional">(a month before the event, unless you change it)</span></label>
+        <input class="st-input" id={id('balance_due_date')} name="balance_due_date" type="date" value={dueDate} />
+    </div>
+    <div class="st-field">
+        <label class="st-label" for={id('notes')}>Notes <span class="st-optional">(optional)</span></label>
+        <textarea class="st-textarea" id={id('notes')} name="notes" rows="3" maxlength="5000">{booking?.notes ?? ''}</textarea>
+    </div>
+    <div class="st-actions">
+        <button class="st-button st-button--primary" type="submit">{submitLabel}</button>
+    </div>
+</form>

@@ -1,0 +1,122 @@
+---
+// The boxes for a lead's details, used to add a lead and to edit one. Plain HTML form fields: the browser's own
+// pickers do the work on a phone (calendar for dates, number pad for the phone number).
+import { celebratingOf, type LeadRow } from '../../lib/studio/queries';
+import { CELEBRATING, SOURCES } from '../../lib/studio/vocab';
+
+interface Props {
+    action: string;
+    lead?: LeadRow;
+    submitLabel: string;
+    /** Where to go after saving; defaults to the lead's page. */
+    returnTo?: string;
+    /** Prefix for element ids, so two forms on one page don't clash. */
+    idPrefix?: string;
+}
+
+const { action, lead, submitLabel, returnTo, idPrefix = 'lead' } = Astro.props;
+const celebrating = lead ? celebratingOf(lead) : [];
+const id = (name: string) => `${idPrefix}-${name}`;
+const text = (value: string | null | undefined) => value ?? '';
+---
+
+<form class="st-form" method="post" action={action}>
+    {returnTo && <input type="hidden" name="return_to" value={returnTo} />}
+
+    <div class="st-field-row">
+        <div class="st-field">
+            <label class="st-label" for={id('first_name')}>First name</label>
+            <input class="st-input" id={id('first_name')} name="first_name" type="text" required maxlength="80" autocomplete="off" value={text(lead?.first_name)} />
+        </div>
+        <div class="st-field">
+            <label class="st-label" for={id('last_name')}>Last name <span class="st-optional">(optional)</span></label>
+            <input class="st-input" id={id('last_name')} name="last_name" type="text" maxlength="80" autocomplete="off" value={text(lead?.last_name)} />
+        </div>
+    </div>
+    <div class="st-field">
+        <label class="st-label" for={id('partner_name')}>Partner or other name <span class="st-optional">(optional)</span></label>
+        <input class="st-input" id={id('partner_name')} name="partner_name" type="text" maxlength="80" autocomplete="off" value={text(lead?.partner_name)} />
+    </div>
+
+    <div class="st-field-row">
+        <div class="st-field">
+            <label class="st-label" for={id('email')}>Email <span class="st-optional">(optional)</span></label>
+            <input class="st-input" id={id('email')} name="email" type="email" inputmode="email" maxlength="254" autocomplete="off" value={text(lead?.email)} />
+        </div>
+        <div class="st-field">
+            <label class="st-label" for={id('phone')}>Phone <span class="st-optional">(optional)</span></label>
+            <input class="st-input" id={id('phone')} name="phone" type="tel" inputmode="tel" maxlength="40" autocomplete="off" value={text(lead?.phone)} />
+        </div>
+    </div>
+
+    <div class="st-field-row">
+        <div class="st-field">
+            <label class="st-label" for={id('instagram')}>Instagram <span class="st-optional">(optional)</span></label>
+            <input class="st-input" id={id('instagram')} name="instagram" type="text" maxlength="60" autocomplete="off" autocapitalize="none" placeholder="@handle" value={text(lead?.instagram)} />
+        </div>
+        <div class="st-field">
+            <label class="st-label" for={id('source')}>Where did they come from?</label>
+            <select class="st-select" id={id('source')} name="source">
+                {SOURCES.map((source) => <option value={source.id} selected={(lead?.source ?? 'other') === source.id}>{source.label}</option>)}
+            </select>
+        </div>
+    </div>
+
+    <fieldset class="st-fieldset">
+        <legend class="st-label">What are they celebrating?</legend>
+        <div class="st-checks">
+            {
+                CELEBRATING.map((entry) => (
+                    <label class="st-check">
+                        <input type="checkbox" name="celebrating" value={entry.id} checked={celebrating.includes(entry.id)} />
+                        <span>{entry.label}</span>
+                    </label>
+                ))
+            }
+        </div>
+    </fieldset>
+
+    <div class="st-field-row">
+        <div class="st-field">
+            <label class="st-label" for={id('event_date')}>Event date <span class="st-optional">(optional)</span></label>
+            <input class="st-input" id={id('event_date')} name="event_date" type="date" value={text(lead?.event_date)} />
+        </div>
+        <div class="st-field">
+            <label class="st-label" for={id('end_date')}>End date <span class="st-optional">(weekends)</span></label>
+            <input class="st-input" id={id('end_date')} name="end_date" type="date" value={text(lead?.end_date)} />
+        </div>
+    </div>
+    <label class="st-check">
+        <input type="checkbox" name="date_not_set" value="1" checked={lead?.date_not_set === 1} />
+        <span>Their date isn't set yet</span>
+    </label>
+
+    <div class="st-field-row">
+        <div class="st-field">
+            <label class="st-label" for={id('location')}>City or area <span class="st-optional">(optional)</span></label>
+            <input class="st-input" id={id('location')} name="location" type="text" maxlength="200" autocomplete="off" value={text(lead?.location)} />
+        </div>
+        <div class="st-field">
+            <label class="st-label" for={id('venue')}>Venue <span class="st-optional">(optional)</span></label>
+            <input class="st-input" id={id('venue')} name="venue" type="text" maxlength="200" autocomplete="off" value={text(lead?.venue)} />
+        </div>
+    </div>
+    <div class="st-field">
+        <label class="st-label" for={id('in_georgia')}>In Georgia?</label>
+        <select class="st-select" id={id('in_georgia')} name="in_georgia">
+            <option value="" selected={!lead?.in_georgia}>Not asked yet</option>
+            <option value="yes" selected={lead?.in_georgia === 'yes'}>Yes, in Georgia</option>
+            <option value="destination" selected={lead?.in_georgia === 'destination'}>A destination</option>
+            <option value="not-sure" selected={lead?.in_georgia === 'not-sure'}>Not sure yet</option>
+        </select>
+    </div>
+
+    <div class="st-field">
+        <label class="st-label" for={id('notes')}>Notes <span class="st-optional">(optional)</span></label>
+        <textarea class="st-textarea" id={id('notes')} name="notes" rows="4" maxlength="5000">{text(lead?.notes)}</textarea>
+    </div>
+
+    <div class="st-actions">
+        <button class="st-button st-button--primary" type="submit">{submitLabel}</button>
+    </div>
+</form>

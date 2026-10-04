@@ -1,0 +1,9 @@
+{
+    "includedInAll": ["An example line that is added to every package"],
+    "packages": [
+        { "name": "Example package", "price": 100, "details": ["Four hours of coverage", "One recap reel"] }
+    ],
+    "extras": [
+        { "name": "Example extra", "price": 25 }
+    ]
+}

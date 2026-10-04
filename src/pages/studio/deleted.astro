@@ -1,0 +1,123 @@
+---
+// Recently deleted: nothing here is gone yet. Restore anything for 30 days; after that it can be deleted forever,
+// except a signed contract, or a client who has a booking or files, which Studio keeps.
+import Notice from '../../components/studio/Notice.astro';
+import StudioLayout from '../../layouts/StudioLayout.astro';
+import { isPurgeable, listDeletedCalendarItems, listDeletedFiles, purgeDate } from '../../lib/studio/admin';
+import { calendarTypeLabel } from '../../lib/studio/calendar';
+import { formatDate, formatTimestamp } from '../../lib/studio/dates';
+import { fullName, listLeads } from '../../lib/studio/queries';
+import { studioDb } from '../../lib/studio/server';
+import { utcToEastern } from '../../lib/studio/tz';
+
+export const prerender = false;
+
+const db = studioDb();
+if (!db) return Astro.redirect('/studio?error=database-missing', 303);
+const [leads, files, items] = await Promise.all([listLeads(db, { deleted: true }, 500), listDeletedFiles(db), listDeletedCalendarItems(db)]);
+const now = new Date();
+const nothing = leads.length === 0 && files.length === 0 && items.length === 0;
+---
+
+<StudioLayout title="Recently deleted" current="settings">
+    <p class="st-eyebrow">Settings</p>
+    <h1 class="st-title">Recently deleted</h1>
+    <Notice />
+    <p class="st-quiet">Things you delete wait here for 30 days. You can bring anything back until then.</p>
+
+    {nothing && <p class="st-card">Nothing has been deleted. Everything is where you left it.</p>}
+
+    {
+        leads.length > 0 && (
+            <section class="st-section" aria-labelledby="deleted-clients">
+                <h2 class="st-section-title" id="deleted-clients">Clients</h2>
+                <ul class="st-rows st-rows--plain" role="list">
+                    {leads.map((lead) => (
+                        <li class="st-deleted">
+                            <div class="st-deleted__main">
+                                <a href={`/studio/leads/${lead.id}`}>{fullName(lead)}</a>
+                                <span class="st-optional">Deleted {formatTimestamp(lead.deleted_at!)}. {isPurgeable(lead.deleted_at!, now) ? 'Can be deleted forever.' : `Can be deleted forever from ${formatDate(purgeDate(lead.deleted_at!))}.`}</span>
+                            </div>
+                            <div class="st-deleted__actions">
+                                <form method="post" action={`/api/studio/leads/${lead.id}/restore`}>
+                                    <input type="hidden" name="return_to" value="/studio/deleted" />
+                                    <button class="st-button st-button--secondary" type="submit">Restore<span class="st-visually-hidden"> {fullName(lead)}</span></button>
+                                </form>
+                                {isPurgeable(lead.deleted_at!, now) && (
+                                    <details class="st-details st-details--inline st-details--danger">
+                                        <summary class="st-details__summary">Delete forever</summary>
+                                        <form class="st-form" method="post" action={`/api/studio/leads/${lead.id}/purge`}>
+                                            <p>This erases {lead.first_name}, their timeline, calendar items and their website inquiry. It can't be undone. If they have a booking or files, Studio keeps them instead.</p>
+                                            <button class="st-button st-button--danger" type="submit">Delete {lead.first_name} forever</button>
+                                        </form>
+                                    </details>
+                                )}
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            </section>
+        )
+    }
+
+    {
+        files.length > 0 && (
+            <section class="st-section" aria-labelledby="deleted-files">
+                <h2 class="st-section-title" id="deleted-files">Files</h2>
+                <ul class="st-rows st-rows--plain" role="list">
+                    {files.map((file) => (
+                        <li class="st-deleted">
+                            <div class="st-deleted__main">
+                                <span class="st-file__name">{file.original_name}</span>
+                                <span class="st-optional">
+                                    {file.kind === 'contract' ? 'Signed contract' : 'File'} for <a href={`/studio/leads/${file.lead_id}`}>{file.first_name} {file.last_name}</a>. Deleted {formatTimestamp(file.deleted_at)}.
+                                    {file.kind === 'contract' ? ' Studio keeps signed contracts.' : ''}
+                                </span>
+                            </div>
+                            <div class="st-deleted__actions">
+                                <form method="post" action={`/api/studio/files/${file.id}/restore`}>
+                                    <button class="st-button st-button--secondary" type="submit">Restore<span class="st-visually-hidden"> {file.original_name}</span></button>
+                                </form>
+                                {file.kind !== 'contract' && isPurgeable(file.deleted_at, now) && (
+                                    <form method="post" action={`/api/studio/files/${file.id}/purge`}>
+                                        <button class="st-button st-button--quiet" type="submit">Delete forever<span class="st-visually-hidden"> {file.original_name}</span></button>
+                                    </form>
+                                )}
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            </section>
+        )
+    }
+
+    {
+        items.length > 0 && (
+            <section class="st-section" aria-labelledby="deleted-items">
+                <h2 class="st-section-title" id="deleted-items">Calendar items</h2>
+                <ul class="st-rows st-rows--plain" role="list">
+                    {items.map((item) => (
+                        <li class="st-deleted">
+                            <div class="st-deleted__main">
+                                <span class="st-file__name">{item.title || calendarTypeLabel(item.type)}</span>
+                                <span class="st-optional">
+                                    {calendarTypeLabel(item.type)} on {formatDate(item.all_day === 1 ? item.starts_at : utcToEastern(item.starts_at).date)}. Deleted {formatTimestamp(item.deleted_at)}.
+                                </span>
+                            </div>
+                            <div class="st-deleted__actions">
+                                <form method="post" action={`/api/studio/calendar/${item.id}/restore`}>
+                                    <button class="st-button st-button--secondary" type="submit">Restore<span class="st-visually-hidden"> {item.title || calendarTypeLabel(item.type)}</span></button>
+                                </form>
+                                {isPurgeable(item.deleted_at, now) && (
+                                    <form method="post" action={`/api/studio/calendar/${item.id}/purge`}>
+                                        <button class="st-button st-button--quiet" type="submit">Delete forever<span class="st-visually-hidden"> {item.title || calendarTypeLabel(item.type)}</span></button>
+                                    </form>
+                                )}
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            </section>
+        )
+    }
+</StudioLayout>

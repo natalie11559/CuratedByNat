@@ -25,7 +25,8 @@ The list on the left is grouped the way the website is:
 |---|---|
 | **Pages** > Home page, About page, Services page, Inquire page, Page not found (404) | The words and photos on each page |
 | **Services and photos** > The four services | Your four services: the cards on the Home page and the full sections on the Services page |
-| **Services and photos** > Instagram photos (Home page) | The "More of my work, over on Instagram" section and its four photos |
+| **Services and photos** > Instagram photos (Home page) | The "More of my work, over on Instagram" section: its words and the four photos you picked by hand |
+| **Services and photos** > Instagram feed (automatic photos) | Whether the Instagram section and the "Inquire now" slideshow show your latest Instagram posts by themselves |
 | **Inquiry form** | Every question, choice, and message on the inquiry form |
 | **Every page** > Menu, footer and social links | The menu, the footer, your Instagram and TikTok links, and the photos that slide behind "Inquire now" |
 
@@ -107,14 +108,29 @@ There are always exactly four services. You can drag them to change their order 
 
 ---
 
-## 6. Updating the Instagram photos
+## 6. Your Instagram photos
 
-1. Open **Services and photos > Instagram photos (Home page)**.
-2. Under **Photos**, click the photo you want to change, then swap it the same way as in section 4.
-3. Save.
+Two places on the website can show your newest Instagram posts by themselves: the four photos in
+"More of my work, over on Instagram" on Home, and the slideshow behind "Inquire now". Once your
+Instagram is connected, a new post appears on the website within about half a day. Nothing for you to do.
 
-There are always exactly four. Each one opens your Instagram profile when clicked. The website doesn't
-pull photos from Instagram automatically, so update these whenever you want to show newer work.
+**To turn it on or off:** open **Services and photos > Instagram feed (automatic photos)**.
+
+- **Instagram section on Home** and **Slideshow behind "Inquire now"**: choose "My latest Instagram posts"
+  or "The photos I picked". You can choose differently for each.
+- **How many posts in the slideshow**: 4 to 12.
+- **Include Reel and video covers**: Reels show their cover picture. Turn this off to show only photo posts.
+- **Hide a post**: not everything belongs on the website. Open the post on Instagram, tap the three dots,
+  choose Copy link, then click **Add** here and paste it. It disappears at the next update.
+
+**Your hand-picked photos are the backup.** If Instagram can't be reached, or there aren't enough posts yet,
+the website quietly shows the photos you picked instead. To change those: open
+**Services and photos > Instagram photos (Home page)** (the four for the Home section) or
+**Every page > Menu, footer and social links > Closing banner slideshow photos** (the slideshow), and swap
+them as in section 4.
+
+Each photo in the Home section opens that post on Instagram. The photo descriptions for screen readers come
+from the first sentence of your caption. Posts whose caption mentions prices are described generically.
 
 Your Instagram and TikTok links and handles are in **Every page > Menu, footer and social links >
 Social links**. Your Instagram handle is also typed into three messages in **Inquiry form** (the "Yay,
@@ -160,7 +176,8 @@ astray.
 | Change words on a page | Pages > (the page) |
 | Change a photo on a page | Pages > (the page) > (the section) > Photo |
 | Edit a service | Services and photos > The four services |
-| Change the Instagram photos | Services and photos > Instagram photos (Home page) |
+| Choose automatic or hand-picked Instagram photos, or hide a post | Services and photos > Instagram feed (automatic photos) |
+| Change the hand-picked Instagram photos | Services and photos > Instagram photos (Home page) |
 | Change the slideshow photos | Every page > Menu, footer and social links > Closing banner slideshow photos |
 | Change the menu, footer, or social links | Every page > Menu, footer and social links |
 | Reword the inquiry form | Inquiry form |

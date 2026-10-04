@@ -1,0 +1,318 @@
+---
+// One lead: who they are, how to reach them, where they are in the pipeline, and everything that has happened.
+import ActivityList from '../../../components/studio/ActivityList.astro';
+import BookingCard from '../../../components/studio/BookingCard.astro';
+import BookingForm from '../../../components/studio/BookingForm.astro';
+import Notice from '../../../components/studio/Notice.astro';
+import OriginalInquiry from '../../../components/studio/OriginalInquiry.astro';
+import FilesCard from '../../../components/studio/FilesCard.astro';
+import LeadForm from '../../../components/studio/LeadForm.astro';
+import StagePill from '../../../components/studio/StagePill.astro';
+import StudioLayout from '../../../layouts/StudioLayout.astro';
+import { listTemplates } from '../../../lib/studio/admin';
+import { getBookingsForLead, listExtras, listPackages } from '../../../lib/studio/bookings';
+import { formatDate, formatDateRange, formatShortDate, formatTimestamp, relativeDays, todayEastern } from '../../../lib/studio/dates';
+import { hasSignedContract, listFiles } from '../../../lib/studio/files';
+import { calendarTypeLabel } from '../../../lib/studio/calendar';
+import { loadCalendar } from '../../../lib/studio/calendarDb';
+import { followUpStatus } from '../../../lib/studio/followup';
+import { isId } from '../../../lib/studio/messages';
+import { celebratingOf, fullName, getLead, getSettings, listActivities, listInquiriesForLead } from '../../../lib/studio/queries';
+import { studioDb } from '../../../lib/studio/server';
+import { quietLabel } from '../../../lib/studio/today';
+import { celebratingLabels, SOURCES, STAGES } from '../../../lib/studio/vocab';
+
+export const prerender = false;
+
+const db = studioDb();
+const id = Astro.params.id ?? '';
+if (!db || !isId(id)) return Astro.redirect('/studio/pipeline?error=not-found', 303);
+const lead = await getLead(db, id, { includeDeleted: true });
+if (!lead) return Astro.redirect('/studio/pipeline?error=not-found', 303);
+
+const [activities, inquiries, settings, bookings, packages, extras, files, contractOnFile, calendar, templates] = await Promise.all([
+    listActivities(db, id),
+    listInquiriesForLead(db, id),
+    getSettings(db),
+    getBookingsForLead(db, id),
+    listPackages(db),
+    listExtras(db),
+    listFiles(db, id),
+    hasSignedContract(db, id),
+    loadCalendar(db),
+    listTemplates(db),
+]);
+const upcoming = calendar.filter((entry) => entry.leadId === id && entry.endDate >= todayEastern());
+const today = todayEastern();
+const followUp = followUpStatus(lead, { followUpDays: settings.followUpDays, today });
+const name = fullName(lead);
+const what = celebratingLabels(celebratingOf(lead)).join(', ');
+const when = lead.event_date ? formatDateRange(lead.event_date, lead.end_date) : lead.date_not_set ? "Date isn't set yet" : 'No date yet';
+const phoneDigits = lead.phone.replace(/[^\d+]/g, '');
+const source = SOURCES.find((entry) => entry.id === lead.source)?.label ?? lead.source;
+const isDeleted = Boolean(lead.deleted_at);
+const isLost = lead.stage === 'lost';
+const pageUrl = `/studio/leads/${id}`;
+const bookingFormOpen = bookings.length === 0 && (lead.stage === 'booked' || Astro.url.searchParams.get('notice') === 'booking-needed');
+const georgia = { yes: 'In Georgia', destination: 'A destination', 'not-sure': 'Not sure yet' }[lead.in_georgia as 'yes'] ?? '';
+
+const details: [string, string][] = [
+    ['Celebrating', what],
+    ['Event date', when],
+    ['Location', [lead.venue, lead.location].filter(Boolean).join(', ')],
+    ['In Georgia?', georgia],
+    ['Source', source + (lead.found_via ? ` (${lead.found_via})` : '')],
+    ['Who inquired', lead.inquirer_role],
+    ['Photographer or videographer', lead.photo_video],
+    ['Most excited about', lead.excited_about],
+    ['Anything else', lead.anything_else],
+    ['Added', formatTimestamp(lead.created_at)],
+].filter(([, value]) => Boolean(value)) as [string, string][];
+---
+
+<StudioLayout title={name} current="pipeline">
+    <Notice />
+
+    {
+        isDeleted && (
+            <section class="st-card st-card--warn" aria-labelledby="deleted-heading">
+                <h2 id="deleted-heading" class="st-card__title">In Recently deleted</h2>
+                <p>This lead was deleted on {formatDate(lead.deleted_at!.slice(0, 10))}. It is kept for 30 days.</p>
+                <form method="post" action={`/api/studio/leads/${id}/restore`} class="st-actions">
+                    <button class="st-button st-button--primary" type="submit">Restore this lead</button>
+                </form>
+            </section>
+        )
+    }
+
+    <header class="st-lead-head">
+        <p class="st-eyebrow">{what || 'Lead'}</p>
+        <h1 class="st-title">{name}</h1>
+        {lead.partner_name && <p class="st-lead-head__sub">with {lead.partner_name}</p>}
+        <p class="st-lead-head__meta">
+            <StagePill stage={lead.stage} />
+            <span>{when}</span>
+            {lead.location && <span>{lead.location}</span>}
+        </p>
+        <p class="st-quiet">{isLost ? `Lost: ${lead.lost_reason ?? 'no reason given'}` : quietLabel(followUp.quietDays, Boolean(lead.last_contacted_at))}</p>
+        {followUp.due && <p class="st-flag">Time to follow up</p>}
+    </header>
+
+    <nav class="st-contactbar" aria-label={`Reach ${lead.first_name}`}>
+        {phoneDigits && <a class="st-button st-button--secondary" href={`tel:${phoneDigits}`}>Call</a>}
+        {phoneDigits && <a class="st-button st-button--secondary" href={`sms:${phoneDigits}`}>Text</a>}
+        {lead.email && <a class="st-button st-button--secondary" href={`mailto:${lead.email}`}>Email</a>}
+        {
+            lead.instagram && (
+                <a class="st-button st-button--secondary" href={`https://www.instagram.com/${lead.instagram}/`} target="_blank" rel="noopener">
+                    Instagram<span class="st-visually-hidden"> (opens in a new tab)</span>
+                </a>
+            )
+        }
+    </nav>
+    {!phoneDigits && !lead.email && !lead.instagram && <p class="st-quiet">No contact details yet. Add them under Edit details.</p>}
+
+    {
+        !isDeleted && (
+            <>
+                <section class="st-card" aria-labelledby="log-heading">
+                    <h2 id="log-heading" class="st-card__title">Log contact</h2>
+                    <form class="st-form" method="post" action={`/api/studio/leads/${id}/log`}>
+                        <div class="st-field">
+                            <label class="st-label" for="log-body">What was said? <span class="st-optional">(optional)</span></label>
+                            <textarea class="st-textarea" id="log-body" name="body" rows="2" maxlength="5000" />
+                        </div>
+                        <div class="st-quick" role="group" aria-label="How you were in touch">
+                            <button class="st-button st-button--secondary" type="submit" name="type" value="call">Called</button>
+                            <button class="st-button st-button--secondary" type="submit" name="type" value="text">Texted</button>
+                            <button class="st-button st-button--secondary" type="submit" name="type" value="email">Emailed</button>
+                            <button class="st-button st-button--secondary" type="submit" name="type" value="dm">DM'd</button>
+                            <button class="st-button st-button--secondary" type="submit" name="type" value="meeting">Met</button>
+                        </div>
+                    </form>
+                    <form class="st-form st-form--inline" method="post" action={`/api/studio/leads/${id}/log`}>
+                        <input type="hidden" name="type" value="note" />
+                        <div class="st-field">
+                            <label class="st-label" for="note-body">Or just add a note</label>
+                            <textarea class="st-textarea" id="note-body" name="body" rows="2" maxlength="5000" required />
+                        </div>
+                        <div class="st-actions">
+                            <button class="st-button st-button--secondary" type="submit">Add note</button>
+                        </div>
+                    </form>
+                </section>
+
+                {templates.length > 0 && (
+                    <section class="st-card" aria-labelledby="reply-heading">
+                        <h2 id="reply-heading" class="st-card__title">Reply</h2>
+                        <form class="st-form st-form--row" method="get" action={`/studio/leads/${id}/reply`}>
+                            <div class="st-field">
+                                <label class="st-label" for="reply-pick">Pick a saved message</label>
+                                <select class="st-select" id="reply-pick" name="template">
+                                    {templates.map((template) => <option value={template.id}>{template.name}</option>)}
+                                </select>
+                            </div>
+                            <button class="st-button st-button--secondary" type="submit">Preview</button>
+                        </form>
+                    </section>
+                )}
+
+                <section class="st-card" aria-labelledby="stage-heading">
+                    <h2 id="stage-heading" class="st-card__title">Where they are</h2>
+                    {
+                        isLost ? (
+                            <form class="st-form" method="post" action={`/api/studio/leads/${id}/reopen`}>
+                                <p>Lost: {lead.lost_reason}. Reopening puts them back where they were.</p>
+                                <div class="st-actions">
+                                    <button class="st-button st-button--primary" type="submit">Reopen this lead</button>
+                                </div>
+                            </form>
+                        ) : (
+                            <>
+                                <form class="st-form st-form--row" method="post" action={`/api/studio/leads/${id}/stage`}>
+                                    <div class="st-field">
+                                        <label class="st-label" for="stage-select">Stage</label>
+                                        <select class="st-select" id="stage-select" name="stage">
+                                            {STAGES.map((stage) => (
+                                                <option value={stage.id} selected={stage.id === lead.stage}>
+                                                    {stage.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <button class="st-button st-button--primary" type="submit">Move</button>
+                                </form>
+
+                                <form class="st-form st-form--row" method="post" action={`/api/studio/leads/${id}/followup`}>
+                                    <div class="st-field">
+                                        <label class="st-label" for="followup-date">
+                                            Follow up on{' '}
+                                            {lead.next_follow_up_at && <span class="st-optional">({relativeDays(lead.next_follow_up_at, today).toLowerCase()})</span>}
+                                        </label>
+                                        <input class="st-input" id="followup-date" name="next_follow_up_at" type="date" value={lead.next_follow_up_at ?? ''} />
+                                    </div>
+                                    <button class="st-button st-button--secondary" type="submit">Save</button>
+                                    {lead.next_follow_up_at && (
+                                        <button class="st-button st-button--quiet" type="submit" name="clear" value="1" formnovalidate>
+                                            Clear
+                                        </button>
+                                    )}
+                                </form>
+
+                                <details class="st-details">
+                                    <summary class="st-details__summary">Mark as lost</summary>
+                                    <form class="st-form st-form--row" method="post" action={`/api/studio/leads/${id}/lost`}>
+                                        <div class="st-field">
+                                            <label class="st-label" for="lost-reason">Why?</label>
+                                            <select class="st-select" id="lost-reason" name="reason" required>
+                                                <option value="">Pick a reason</option>
+                                                {settings.lostReasons.map((reason) => (
+                                                    <option value={reason}>{reason}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <button class="st-button st-button--secondary" type="submit">Mark as lost</button>
+                                    </form>
+                                </details>
+                            </>
+                        )
+                    }
+                </section>
+            </>
+        )
+    }
+
+    {
+        bookings.map((booking) => (
+            <BookingCard booking={booking} packages={packages} extras={extras} returnTo={pageUrl} today={today} eventDate={lead.event_date} contractMissing={!contractOnFile && !isDeleted} />
+        ))
+    }
+    {
+        !isDeleted && !isLost && (
+            <section class="st-card" aria-labelledby="booking-heading">
+                <h2 id="booking-heading" class="st-card__title">{bookings.length === 0 ? 'Booking' : 'Another booking'}</h2>
+                <details class="st-details" open={bookingFormOpen}>
+                    <summary class="st-details__summary">{bookings.length === 0 ? `Book ${lead.first_name}` : 'Add another booking'}</summary>
+                    <BookingForm action={`/api/studio/leads/${id}/book`} returnTo={pageUrl} packages={packages} extras={extras} eventDate={lead.event_date} submitLabel="Book this client" idPrefix="book" />
+                </details>
+            </section>
+        )
+    }
+
+    <section class="st-card" aria-labelledby="calendar-heading">
+        <h2 id="calendar-heading" class="st-card__title">Calendar</h2>
+        {
+            upcoming.length === 0 ? (
+                <p class="st-quiet">Nothing coming up for {lead.first_name} yet.</p>
+            ) : (
+                <ul class="st-rows" role="list">
+                    {upcoming.map((entry) => (
+                        <li>
+                            <a class="st-row" href={entry.itemId ? `/studio/calendar/items/${entry.itemId}` : `/studio/calendar/day/${entry.date}`}>
+                                <span class="st-row__date">{formatShortDate(entry.date)}</span>
+                                <span class="st-row__main">
+                                    <span class="st-row__title">{entry.title}</span>
+                                    <span class="st-row__sub">{calendarTypeLabel(entry.type)}</span>
+                                </span>
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            )
+        }
+        {
+            !isDeleted && (
+                <div class="st-actions st-actions--spaced">
+                    <a class="st-button st-button--secondary" href={`/studio/calendar/new?lead=${id}&type=consultation`}>Schedule a consultation</a>
+                    <a class="st-button st-button--secondary" href={`/studio/calendar/new?lead=${id}&type=follow_up`}>Add a reminder</a>
+                </div>
+            )
+        }
+    </section>
+
+    <FilesCard leadId={id} files={files} canUpload={!isDeleted} />
+
+    <section class="st-card" aria-labelledby="timeline-heading">
+        <h2 id="timeline-heading" class="st-card__title">Timeline</h2>
+        <ActivityList activities={activities} />
+    </section>
+
+    <section class="st-card" aria-labelledby="details-heading">
+        <h2 id="details-heading" class="st-card__title">Details</h2>
+        <dl class="st-dl">
+            {
+                details.map(([label, value]) => (
+                    <div class="st-dl__row">
+                        <dt>{label}</dt>
+                        <dd>{value}</dd>
+                    </div>
+                ))
+            }
+        </dl>
+        {lead.notes && <p class="st-notes">{lead.notes}</p>}
+        {
+            !isDeleted && (
+                <details class="st-details">
+                    <summary class="st-details__summary">Edit details</summary>
+                    <LeadForm action={`/api/studio/leads/${id}/update`} lead={lead} submitLabel="Save changes" idPrefix="edit" />
+                </details>
+            )
+        }
+    </section>
+
+    {inquiries.length > 0 && <section class="st-card" aria-labelledby="inquiry-heading"><h2 id="inquiry-heading" class="st-card__title">From the website</h2><OriginalInquiry inquiries={inquiries} /></section>}
+
+    {
+        !isDeleted && (
+            <details class="st-details st-details--danger">
+                <summary class="st-details__summary">Delete this lead</summary>
+                <form class="st-form" method="post" action={`/api/studio/leads/${id}/delete`}>
+                    <p>This moves {lead.first_name} to Recently deleted. You can bring them back for 30 days.</p>
+                    <div class="st-actions">
+                        <button class="st-button st-button--danger" type="submit">Delete {lead.first_name}</button>
+                    </div>
+                </form>
+            </details>
+        )
+    }
+</StudioLayout>

@@ -1,0 +1,102 @@
+---
+// The calendar: a month at a glance, and the same month as a list. On a phone the list is the main view.
+import CalendarLegend from '../../../components/studio/CalendarLegend.astro';
+import EntryRow from '../../../components/studio/EntryRow.astro';
+import Notice from '../../../components/studio/Notice.astro';
+import StudioLayout from '../../../layouts/StudioLayout.astro';
+import { calendarTypeLabel, entriesByDay, isMonth, monthGrid, shiftMonth } from '../../../lib/studio/calendar';
+import { loadCalendar } from '../../../lib/studio/calendarDb';
+import { addDays, formatMonth, formatShortDate, todayEastern } from '../../../lib/studio/dates';
+import { studioDb } from '../../../lib/studio/server';
+
+export const prerender = false;
+
+const db = studioDb();
+if (!db) return Astro.redirect('/studio?error=database-missing', 303);
+
+const today = todayEastern();
+const requested = Astro.url.searchParams.get('month');
+const month = isMonth(requested) ? requested : today.slice(0, 7);
+const weeks = monthGrid(month);
+const gridStart = weeks[0]![0]!.date;
+const gridEnd = weeks.at(-1)![6]!.date;
+const days = entriesByDay(await loadCalendar(db), gridStart, gridEnd);
+const monthDays = [...days.entries()].filter(([date]) => date.startsWith(month)).sort(([a], [b]) => a.localeCompare(b));
+const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const dayLabel = (date: string) => {
+    const items = days.get(date) ?? [];
+    const kinds = [...new Set(items.map((entry) => calendarTypeLabel(entry.type)))].join(', ');
+    return `${formatShortDate(date)}${items.length ? `: ${items.length} ${items.length === 1 ? 'item' : 'items'} (${kinds})` : ''}`;
+};
+const currentMonth = today.slice(0, 7);
+---
+
+<StudioLayout title="Calendar" current="calendar" wide>
+    <div class="st-page-head">
+        <div>
+            <p class="st-eyebrow">Everything coming up</p>
+            <h1 class="st-title">{formatMonth(month)}</h1>
+        </div>
+        <a class="st-button st-button--primary" href={`/studio/calendar/new${month === currentMonth ? '' : `?date=${month}-01`}`}>Add to calendar</a>
+    </div>
+    <Notice />
+
+    <nav class="st-monthnav" aria-label="Months">
+        <a class="st-button st-button--secondary" href={`/studio/calendar?month=${shiftMonth(month, -1)}`}>
+            <span aria-hidden="true">←</span><span class="st-visually-hidden">Previous month, </span> {formatMonth(shiftMonth(month, -1)).split(' ')[0]}
+        </a>
+        {month !== currentMonth && <a class="st-button st-button--quiet" href="/studio/calendar">This month</a>}
+        <a class="st-button st-button--secondary" href={`/studio/calendar?month=${shiftMonth(month, 1)}`}>
+            {formatMonth(shiftMonth(month, 1)).split(' ')[0]} <span class="st-visually-hidden">, next month</span><span aria-hidden="true">→</span>
+        </a>
+    </nav>
+
+    <div class="st-month" role="grid" aria-label={formatMonth(month)}>
+        <div class="st-month__row st-month__head" role="row">
+            {weekdays.map((name) => <span class="st-month__weekday" role="columnheader" aria-label={name}>{name.slice(0, 3)}</span>)}
+        </div>
+        {
+            weeks.map((week) => (
+                <div class="st-month__row" role="row">
+                    {week.map((day) => {
+                        const entries = days.get(day.date) ?? [];
+                        const kinds = [...new Set(entries.map((entry) => entry.type))].slice(0, 4);
+                        return (
+                            <div role="gridcell">
+                                <a class:list={['st-month__day', !day.inMonth && 'st-month__day--outside', day.date === today && 'st-month__day--today']} href={`/studio/calendar/day/${day.date}`} aria-current={day.date === today ? 'date' : undefined} aria-label={dayLabel(day.date)}>
+                                    <span class="st-month__number">{Number(day.date.slice(8))}</span>
+                                    <span class="st-month__dots" aria-hidden="true">
+                                        {kinds.map((kind) => <span class:list={['st-dot', `st-dot--${kind}`]}></span>)}
+                                    </span>
+                                </a>
+                            </div>
+                        );
+                    })}
+                </div>
+            ))
+        }
+    </div>
+    <CalendarLegend />
+
+    <section class="st-section" aria-labelledby="agenda-heading">
+        <h2 class="st-section-title" id="agenda-heading">{formatMonth(month)}, day by day</h2>
+        {
+            monthDays.length === 0 ? (
+                <p class="st-quiet">Nothing on the calendar this month. <a href="/studio/calendar/new">Add something</a>.</p>
+            ) : (
+                monthDays.map(([date, entries]) => (
+                    <div class="st-agenda__day">
+                        <h3 class="st-agenda__date">
+                            <a href={`/studio/calendar/day/${date}`}>{formatShortDate(date)}</a>
+                            {date === today && <span class="st-pill">Today</span>}
+                            {date === addDays(today, 1) && <span class="st-pill">Tomorrow</span>}
+                        </h3>
+                        <ul class="st-entries" role="list">
+                            {entries.map((entry) => <li><EntryRow entry={entry} /></li>)}
+                        </ul>
+                    </div>
+                ))
+            )
+        }
+    </section>
+</StudioLayout>

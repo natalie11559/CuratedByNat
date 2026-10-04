@@ -1,0 +1,38 @@
+---
+// The full original website submission, in the form's own words.
+import { inquiryForm } from '../../lib/content';
+import { formatTimestamp } from '../../lib/studio/dates';
+import { answeredQuestions } from '../../lib/inquiry/email';
+import type { LeadInquiryRow } from '../../lib/studio/queries';
+import { submissionFromPayload } from '../../lib/studio/leads';
+
+interface Props {
+    inquiries: readonly LeadInquiryRow[];
+}
+
+const { inquiries } = Astro.props;
+const entries = inquiries.map((inquiry) => {
+    const submission = submissionFromPayload(inquiry.payload);
+    return { id: inquiry.id, createdAt: inquiry.created_at, answers: submission ? answeredQuestions(submission, inquiryForm) : [] };
+});
+---
+
+{
+    entries.map((entry, index) => (
+        <details class="st-details" open={index === 0}>
+            <summary class="st-details__summary">Original inquiry, {formatTimestamp(entry.createdAt)}</summary>
+            {entry.answers.length === 0 ? (
+                <p class="st-quiet">This inquiry could not be read.</p>
+            ) : (
+                <dl class="st-dl">
+                    {entry.answers.map((answer) => (
+                        <div class="st-dl__row">
+                            <dt>{answer.label}</dt>
+                            <dd>{answer.value}</dd>
+                        </div>
+                    ))}
+                </dl>
+            )}
+        </details>
+    ))
+}

@@ -1,0 +1,75 @@
+---
+// The files kept with a lead: the signed contract, and anything else. Upload from the phone's photo library or
+// Files app, or from a computer. Nothing here is public.
+import { formatTimestamp } from '../../lib/studio/dates';
+import type { FileRow } from '../../lib/studio/files';
+import { formatBytes } from '../../lib/studio/filetypes';
+import { firstNameFromEmail } from '../../lib/studio/people';
+
+interface Props {
+    leadId: string;
+    files: readonly FileRow[];
+    canUpload: boolean;
+}
+
+const { leadId, files, canUpload } = Astro.props;
+const canView = (file: FileRow) => ['application/pdf', 'image/jpeg', 'image/png'].includes(file.content_type);
+---
+
+<section class="st-card" id="files" aria-labelledby="files-heading">
+    <h2 id="files-heading" class="st-card__title">Files</h2>
+    {
+        files.length === 0 ? (
+            <p class="st-quiet">No files yet. The signed contract goes here.</p>
+        ) : (
+            <ul class="st-files" role="list">
+                {files.map((file) => (
+                    <li class="st-file">
+                        <p class="st-file__main">
+                            <span class="st-file__name">{file.original_name}</span>
+                            <span class="st-file__meta">
+                                {file.kind === 'contract' ? <strong class="st-file__kind">Signed contract</strong> : null}
+                                {formatBytes(file.size_bytes)} · {formatTimestamp(file.uploaded_at)}
+                                {file.actor_email ? ` · ${firstNameFromEmail(file.actor_email)}` : ''}
+                            </span>
+                        </p>
+                        <div class="st-file__actions">
+                            {canView(file) && (
+                                <a class="st-button st-button--secondary" href={`/api/studio/files/${file.id}`} target="_blank" rel="noopener">
+                                    View<span class="st-visually-hidden"> {file.original_name} (opens in a new tab)</span>
+                                </a>
+                            )}
+                            <a class="st-button st-button--secondary" href={`/api/studio/files/${file.id}?download=1`}>
+                                Download<span class="st-visually-hidden"> {file.original_name}</span>
+                            </a>
+                            <form method="post" action={`/api/studio/files/${file.id}/delete`}>
+                                <button class="st-button st-button--quiet" type="submit" aria-label={`Remove ${file.original_name}`}>Remove</button>
+                            </form>
+                        </div>
+                    </li>
+                ))}
+            </ul>
+        )
+    }
+
+    {
+        canUpload && (
+            <form class="st-form st-uploadform" method="post" action={`/api/studio/leads/${leadId}/upload`} enctype="multipart/form-data">
+                <div class="st-field">
+                    <label class="st-label" for="upload-file">Add a file <span class="st-optional">(PDF, JPG, PNG or HEIC, up to 25 MB)</span></label>
+                    <input class="st-input st-input--file" id="upload-file" name="file" type="file" required accept="application/pdf,image/jpeg,image/png,image/heic,.pdf,.jpg,.jpeg,.png,.heic" />
+                </div>
+                <div class="st-field">
+                    <label class="st-label" for="upload-kind">What is it?</label>
+                    <select class="st-select" id="upload-kind" name="kind">
+                        <option value="contract">Signed contract</option>
+                        <option value="other">Something else</option>
+                    </select>
+                </div>
+                <div class="st-actions">
+                    <button class="st-button st-button--primary" type="submit">Save file</button>
+                </div>
+            </form>
+        )
+    }
+</section>

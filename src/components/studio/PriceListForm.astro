@@ -1,0 +1,45 @@
+---
+// Edit or add one package or extra. Prices are typed in dollars. Hiding something keeps it on bookings already made.
+import type { ExtraRow, PackageRow } from '../../lib/studio/bookings';
+import { packageDetails } from '../../lib/studio/bookings';
+import { toDollarInput } from '../../lib/studio/money';
+
+interface Props {
+    kind: 'package' | 'extra';
+    action: string;
+    item?: PackageRow | ExtraRow;
+    submitLabel: string;
+    idPrefix: string;
+}
+
+const { kind, action, item, submitLabel, idPrefix } = Astro.props;
+const lines = item && kind === 'package' ? packageDetails(item as PackageRow).join('\n') : '';
+---
+
+<form class="st-form" method="post" action={action}>
+    <div class="st-field-row">
+        <div class="st-field">
+            <label class="st-label" for={`${idPrefix}-name`}>Name</label>
+            <input class="st-input" id={`${idPrefix}-name`} name="name" type="text" required maxlength="100" autocomplete="off" value={item?.name ?? ''} />
+        </div>
+        <div class="st-field">
+            <label class="st-label" for={`${idPrefix}-price`}>Price</label>
+            <input class="st-input" id={`${idPrefix}-price`} name="price" type="text" inputmode="decimal" required autocomplete="off" placeholder="0" value={item ? toDollarInput(item.price_cents) : ''} />
+        </div>
+    </div>
+    {
+        kind === 'package' && (
+            <div class="st-field">
+                <label class="st-label" for={`${idPrefix}-details`}>What's included <span class="st-optional">(one line each)</span></label>
+                <textarea class="st-textarea" id={`${idPrefix}-details`} name="details" rows="6" maxlength="6000">{lines}</textarea>
+            </div>
+        )
+    }
+    <div class="st-field">
+        <label class="st-label" for={`${idPrefix}-order`}>Order in the list <span class="st-optional">(smaller numbers come first)</span></label>
+        <input class="st-input" id={`${idPrefix}-order`} name="sort_order" type="number" inputmode="numeric" min="0" max="999" value={item?.sort_order ?? 0} />
+    </div>
+    <div class="st-actions">
+        <button class="st-button st-button--primary" type="submit">{submitLabel}</button>
+    </div>
+</form>

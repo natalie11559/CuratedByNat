@@ -3,7 +3,7 @@
     "name": "curatedbynat",
     "compatibility_date": "2026-09-20",
     "compatibility_flags": ["nodejs_compat"],
-    "main": "@astrojs/cloudflare/entrypoints/server",
+    "main": "./src/worker.ts",
     "assets": { "directory": "./dist", "binding": "ASSETS" },
     "observability": { "enabled": true },
     "routes": [
@@ -18,6 +18,13 @@
             "migrations_dir": "migrations"
         }
     ],
+    "r2_buckets": [
+        { "binding": "INSTAGRAM_BUCKET", "bucket_name": "curatedbynat-instagram" },
+        // Signed contracts and other client files. Private: there is no public address for this bucket.
+        { "binding": "STUDIO_FILES", "bucket_name": "curatedbynat-studio-files" }
+    ],
+    // Every six hours the Worker copies Nat's newest Instagram posts into the bucket above (a no-op when nothing is new).
+    "triggers": { "crons": ["17 */6 * * *"] },
     "ratelimits": [
         { "name": "INQUIRY_RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } }
     ],

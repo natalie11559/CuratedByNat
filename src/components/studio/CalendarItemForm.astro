@@ -1,0 +1,86 @@
+---
+// Add or change a calendar item. Times are Eastern. For an all-day item, leave the times blank.
+import { CALENDAR_TYPES, type CalendarItem } from '../../lib/studio/calendar';
+import { utcToEastern } from '../../lib/studio/tz';
+
+interface Props {
+    action: string;
+    submitLabel: string;
+    leads: readonly { id: string; label: string }[];
+    item?: CalendarItem;
+    defaults?: { date?: string; leadId?: string; type?: string };
+    returnTo?: string;
+    idPrefix: string;
+}
+
+const { action, submitLabel, leads, item, defaults = {}, returnTo, idPrefix } = Astro.props;
+const id = (name: string) => `${idPrefix}-${name}`;
+
+const allDay = item ? item.all_day === 1 : false;
+const start = item ? (allDay ? { date: item.starts_at, time: '' } : utcToEastern(item.starts_at)) : { date: defaults.date ?? '', time: '' };
+const end = item?.ends_at ? (allDay ? { date: item.ends_at, time: '' } : utcToEastern(item.ends_at)) : { date: '', time: '' };
+const endDate = end.date && end.date !== start.date ? end.date : '';
+const type = item?.type ?? defaults.type ?? 'consultation';
+const leadId = item?.lead_id ?? defaults.leadId ?? '';
+---
+
+<form class="st-form" method="post" action={action}>
+    {returnTo && <input type="hidden" name="return_to" value={returnTo} />}
+
+    <div class="st-field-row">
+        <div class="st-field">
+            <label class="st-label" for={id('type')}>What is it?</label>
+            <select class="st-select" id={id('type')} name="type">
+                {CALENDAR_TYPES.map((entry) => <option value={entry.id} selected={entry.id === type}>{entry.label}</option>)}
+            </select>
+        </div>
+        <div class="st-field">
+            <label class="st-label" for={id('lead')}>About a client <span class="st-optional">(optional)</span></label>
+            <select class="st-select" id={id('lead')} name="lead_id">
+                <option value="" selected={leadId === ''}>Nobody in particular</option>
+                {leads.map((lead) => <option value={lead.id} selected={lead.id === leadId}>{lead.label}</option>)}
+            </select>
+        </div>
+    </div>
+    <div class="st-field">
+        <label class="st-label" for={id('title')}>Title <span class="st-optional">(optional when it is about a client)</span></label>
+        <input class="st-input" id={id('title')} name="title" type="text" maxlength="120" autocomplete="off" value={item?.title ?? ''} />
+    </div>
+
+    <div class="st-field-row">
+        <div class="st-field">
+            <label class="st-label" for={id('date')}>Date</label>
+            <input class="st-input" id={id('date')} name="date" type="date" required value={start.date} />
+        </div>
+        <div class="st-field">
+            <label class="st-label" for={id('end_date')}>Last day <span class="st-optional">(only if it runs longer)</span></label>
+            <input class="st-input" id={id('end_date')} name="end_date" type="date" value={endDate} />
+        </div>
+    </div>
+    <label class="st-check">
+        <input type="checkbox" name="all_day" value="1" checked={allDay} />
+        <span>All day (no times)</span>
+    </label>
+    <div class="st-field-row">
+        <div class="st-field">
+            <label class="st-label" for={id('start_time')}>Starts <span class="st-optional">(Eastern time)</span></label>
+            <input class="st-input" id={id('start_time')} name="start_time" type="time" value={start.time} />
+        </div>
+        <div class="st-field">
+            <label class="st-label" for={id('end_time')}>Ends <span class="st-optional">(optional)</span></label>
+            <input class="st-input" id={id('end_time')} name="end_time" type="time" value={end.time} />
+        </div>
+    </div>
+
+    <div class="st-field">
+        <label class="st-label" for={id('location')}>Where <span class="st-optional">(optional)</span></label>
+        <input class="st-input" id={id('location')} name="location" type="text" maxlength="200" autocomplete="off" value={item?.location ?? ''} />
+    </div>
+    <div class="st-field">
+        <label class="st-label" for={id('notes')}>Notes <span class="st-optional">(only you see these)</span></label>
+        <textarea class="st-textarea" id={id('notes')} name="notes" rows="3" maxlength="5000">{item?.notes ?? ''}</textarea>
+    </div>
+    <div class="st-actions">
+        <button class="st-button st-button--primary" type="submit">{submitLabel}</button>
+    </div>
+</form>

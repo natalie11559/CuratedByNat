@@ -4,6 +4,7 @@ import { home } from './src/keystatic/home';
 import { inquirePage } from './src/keystatic/inquirePage';
 import { inquiryForm } from './src/keystatic/inquiryForm';
 import { instagram } from './src/keystatic/instagram';
+import { instagramFeed } from './src/keystatic/instagramFeed';
 import { notFound } from './src/keystatic/notFound';
 import { services } from './src/keystatic/services';
 import { servicesPage } from './src/keystatic/servicesPage';
@@ -24,7 +25,7 @@ export default config({
         brand: { name: 'Curated by Nat' },
         navigation: {
             Pages: ['home', 'about', 'servicesPage', 'inquirePage', 'notFound'],
-            'Services and photos': ['services', 'instagram'],
+            'Services and photos': ['services', 'instagram', 'instagramFeed'],
             'Inquiry form': ['inquiryForm'],
             'Every page': ['site'],
         },
@@ -37,6 +38,7 @@ export default config({
         notFound,
         services,
         instagram,
+        instagramFeed,
         inquiryForm,
         site,
     },

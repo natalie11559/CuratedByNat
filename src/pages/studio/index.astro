@@ -1,0 +1,174 @@
+---
+// Studio home: what needs attention today.
+import LeadCard from '../../components/studio/LeadCard.astro';
+import Notice from '../../components/studio/Notice.astro';
+import StudioLayout from '../../layouts/StudioLayout.astro';
+import { formatShortDate, relativeDays, todayEastern } from '../../lib/studio/dates';
+import { formatClock } from '../../lib/studio/tz';
+import { countUnlinkedInquiries, syncUnlinkedInquiries } from '../../lib/studio/leads';
+import { firstNameFromEmail } from '../../lib/studio/people';
+import { instagramHealth, type InstagramHealth } from '../../lib/instagram/health';
+import { listBalancesDue, type BalanceDue } from '../../lib/studio/bookings';
+import { formatCents } from '../../lib/studio/money';
+import { calendarTypeLabel } from '../../lib/studio/calendar';
+import { loadCalendar } from '../../lib/studio/calendarDb';
+import { fullName, getSettings, listLeads } from '../../lib/studio/queries';
+import { studioDb } from '../../lib/studio/server';
+import { buildToday } from '../../lib/studio/today';
+
+export const prerender = false;
+
+const user = Astro.locals.studioUser;
+const db = studioDb();
+const today = todayEastern();
+const longDate = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'America/New_York' }).format(new Date());
+
+let attention = 0;
+let overview = null as ReturnType<typeof buildToday> | null;
+let followUpDays = 5;
+let total = 0;
+let balances: BalanceDue[] = [];
+let instagram: InstagramHealth = { ok: true };
+
+if (db) {
+    // Website inquiries that arrived before Studio existed, or whose lead step failed, are picked up here.
+    if ((await countUnlinkedInquiries(db).catch(() => 0)) > 0) {
+        await syncUnlinkedInquiries(db, { limit: 100 }).catch(() => null);
+    }
+    attention = await countUnlinkedInquiries(db).catch(() => 0);
+    const [leads, settings] = await Promise.all([listLeads(db), getSettings(db)]);
+    followUpDays = settings.followUpDays;
+    total = leads.length;
+    overview = buildToday(leads, { today, followUpDays, entries: await loadCalendar(db) });
+    balances = await listBalancesDue(db, today).catch(() => []);
+    instagram = await instagramHealth(db);
+}
+---
+
+<StudioLayout title="Today" current="home">
+    <p class="st-eyebrow">{longDate}</p>
+    <h1 class="st-title">Hi, {user ? firstNameFromEmail(user.email) : 'there'}.</h1>
+    <Notice />
+
+    {
+        attention > 0 && (
+            <section class="st-card st-card--warn" aria-labelledby="attention-heading">
+                <h2 id="attention-heading" class="st-card__title">
+                    {attention} {attention === 1 ? 'inquiry needs' : 'inquiries need'} attention
+                </h2>
+                <p>{attention === 1 ? "It's" : "They're"} saved and emailed to you, but didn't become {attention === 1 ? 'a lead' : 'leads'} yet.</p>
+                <form method="post" action="/api/studio/inquiries/sync" class="st-actions">
+                    <button class="st-button st-button--primary" type="submit">Try again</button>
+                </form>
+            </section>
+        )
+    }
+
+    {
+        !instagram.ok && (
+            <section class="st-card st-card--warn" aria-labelledby="instagram-heading">
+                <h2 id="instagram-heading" class="st-card__title">Instagram needs a quick look</h2>
+                <p>{instagram.message}</p>
+            </section>
+        )
+    }
+
+    {!db && <p class="st-notice st-notice--error" role="alert">Studio's database isn't available right now.</p>}
+
+    {
+        overview && (
+            <>
+                <section class="st-section" aria-labelledby="followup-heading">
+                    <h2 id="followup-heading" class="st-section-title">
+                        Needs follow-up <span class="st-stagebar__count">{overview.needsFollowUp.length}</span>
+                    </h2>
+                    {overview.needsFollowUp.length === 0 ? (
+                        <p class="st-quiet">No follow-ups due. Go enjoy your coffee.</p>
+                    ) : (
+                        <ul class="st-cards" role="list">
+                            {overview.needsFollowUp.map(({ lead }) => (
+                                <li>
+                                    <LeadCard lead={lead} today={today} followUpDays={followUpDays} showStage />
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
+
+                <section class="st-section" aria-labelledby="new-heading">
+                    <h2 id="new-heading" class="st-section-title">
+                        New inquiries <span class="st-stagebar__count">{overview.newInquiries.length}</span>
+                    </h2>
+                    {overview.newInquiries.length === 0 ? (
+                        <p class="st-quiet">{total === 0 ? 'No leads yet. When someone inquires on your website, they show up here.' : 'Nobody new waiting on you.'}</p>
+                    ) : (
+                        <ul class="st-cards" role="list">
+                            {overview.newInquiries.map((lead) => (
+                                <li>
+                                    <LeadCard lead={lead} today={today} followUpDays={followUpDays} />
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
+
+                <section class="st-section" aria-labelledby="week-heading">
+                    <h2 id="week-heading" class="st-section-title">
+                        This week <span class="st-stagebar__count">{overview.thisWeek.length}</span>
+                    </h2>
+                    {overview.thisWeek.length === 0 ? (
+                        <p class="st-quiet">A quiet week so far.</p>
+                    ) : (
+                        <ul class="st-rows" role="list">
+                            {overview.thisWeek.map(({ entry, date }) => (
+                                <li>
+                                    <a class="st-row" href={entry.itemId ? `/studio/calendar/items/${entry.itemId}` : entry.leadId ? `/studio/leads/${entry.leadId}` : '/studio/calendar'}>
+                                        <span class="st-row__date">
+                                            {formatShortDate(date)}
+                                            <span class="st-row__sub">{relativeDays(date, today)}</span>
+                                        </span>
+                                        <span class="st-row__main">
+                                            <span class="st-row__title">{entry.title}</span>
+                                            <span class="st-row__sub">
+                                                {calendarTypeLabel(entry.type)}
+                                                {entry.allDay ? '' : ` · ${formatClock(entry.startTime!)}`}
+                                            </span>
+                                        </span>
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
+
+                <section class="st-section" aria-labelledby="balances-heading">
+                    <h2 id="balances-heading" class="st-section-title">
+                        Balances due <span class="st-stagebar__count">{balances.length}</span>
+                    </h2>
+                    {balances.length === 0 ? (
+                        <p class="st-quiet">Nothing due in the next two weeks.</p>
+                    ) : (
+                        <ul class="st-rows" role="list">
+                            {balances.map((balance) => (
+                                <li>
+                                    <a class="st-row" href={`/studio/leads/${balance.leadId}`}>
+                                        <span class="st-row__date">
+                                            {formatShortDate(balance.dueDate)}
+                                            <span class="st-row__sub">{balance.dueDate < today ? `Overdue ${relativeDays(balance.dueDate, today).toLowerCase()}` : relativeDays(balance.dueDate, today)}</span>
+                                        </span>
+                                        <span class="st-row__main">
+                                            <span class="st-row__title">{balance.firstName} {balance.lastName}</span>
+                                            <span class="st-row__sub">{formatCents(balance.balanceCents)} still to receive{balance.packageName ? ` for ${balance.packageName}` : ''}</span>
+                                        </span>
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
+            </>
+        )
+    }
+
+    <p class="st-quiet st-linkrow"><a href="/cdn-cgi/access/logout">Sign out</a></p>
+</StudioLayout>
