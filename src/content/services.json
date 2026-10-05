@@ -56,7 +56,7 @@
       "name": "Bridal Events",
       "cardText": "Showers, engagement parties, rehearsal dinners & more.",
       "cardPhoto": {
-        "image": "/src/assets/images/services/items/2/cardPhoto/image.jpg",
+        "image": "/src/assets/images/services/items/2/cardPhoto/image.JPG",
         "alt": "Round table set with green glassware, woven placemats, menus, and a white and green floral centerpiece",
         "focusVertical": "center",
         "focusHorizontal": "center"
@@ -68,7 +68,7 @@
       ],
       "buttonLabel": "Inquire about your event",
       "sectionPhoto": {
-        "image": "/src/assets/images/services/items/2/sectionPhoto/image.jpg",
+        "image": "/src/assets/images/services/items/2/sectionPhoto/image.JPG",
         "alt": "Round table set with green glassware, woven placemats, menus, and a white and green floral centerpiece",
         "focusVertical": "center",
         "focusHorizontal": "center"
