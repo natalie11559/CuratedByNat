@@ -28,10 +28,33 @@
       "anchor": "weddings"
     },
     {
+      "name": "Bridal Events",
+      "cardText": "Showers, engagement parties, rehearsal dinners & more.",
+      "cardPhoto": {
+        "image": "/src/assets/images/services/items/1/cardPhoto/image.JPG",
+        "alt": "Round table set with green glassware, woven placemats, menus, and a white and green floral centerpiece",
+        "focusVertical": "center",
+        "focusHorizontal": "center"
+      },
+      "title": "Showers, engagement parties, rehearsal dinners & more.",
+      "description": "The celebrations before the wedding deserve their own spotlight. I capture the details you planned, the toasts, and the people who showed up for you, so these moments don't get lost in the lead-up to the big day. Planning a proposal or an engagement shoot? I capture those too.",
+      "receives": [
+        "A curated collection of photos and videos from your event, focused on the details, the toasts, and your people."
+      ],
+      "buttonLabel": "Inquire about your event",
+      "sectionPhoto": {
+        "image": "/src/assets/images/services/items/1/sectionPhoto/image.JPG",
+        "alt": "Round table set with green glassware, woven placemats, menus, and a white and green floral centerpiece",
+        "focusVertical": "center",
+        "focusHorizontal": "center"
+      },
+      "anchor": "bridal-events"
+    },
+    {
       "name": "Bachelorette Weekends",
       "cardText": "The outfits, the chaos, the inside jokes and everything in between.",
       "cardPhoto": {
-        "image": "/src/assets/images/services/items/1/cardPhoto/image.JPG",
+        "image": "/src/assets/images/services/items/2/cardPhoto/image.JPG",
         "alt": "Bride in a high-neck lace gown standing with her father by a tall window",
         "focusVertical": "center",
         "focusHorizontal": "center"
@@ -45,35 +68,12 @@
       ],
       "buttonLabel": "Plan your bachelorette content",
       "sectionPhoto": {
-        "image": "/src/assets/images/services/items/1/sectionPhoto/image.JPG",
+        "image": "/src/assets/images/services/items/2/sectionPhoto/image.JPG",
         "alt": "Floral heels and white wide-leg pants",
         "focusVertical": "lower",
         "focusHorizontal": "center"
       },
       "anchor": "bachelorette"
-    },
-    {
-      "name": "Bridal Events",
-      "cardText": "Showers, engagement parties, rehearsal dinners & more.",
-      "cardPhoto": {
-        "image": "/src/assets/images/services/items/2/cardPhoto/image.JPG",
-        "alt": "Round table set with green glassware, woven placemats, menus, and a white and green floral centerpiece",
-        "focusVertical": "center",
-        "focusHorizontal": "center"
-      },
-      "title": "Showers, engagement parties, rehearsal dinners & more.",
-      "description": "The celebrations before the wedding deserve their own spotlight. I capture the details you planned, the toasts, and the people who showed up for you, so these moments don't get lost in the lead-up to the big day. Planning a proposal or an engagement shoot? I capture those too.",
-      "receives": [
-        "A curated collection of photos and videos from your event, focused on the details, the toasts, and your people."
-      ],
-      "buttonLabel": "Inquire about your event",
-      "sectionPhoto": {
-        "image": "/src/assets/images/services/items/2/sectionPhoto/image.JPG",
-        "alt": "Round table set with green glassware, woven placemats, menus, and a white and green floral centerpiece",
-        "focusVertical": "center",
-        "focusHorizontal": "center"
-      },
-      "anchor": "bridal-events"
     },
     {
       "name": "Celebrations",
