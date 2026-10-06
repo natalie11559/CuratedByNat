@@ -3,10 +3,9 @@
   "items": [
     {
       "name": "Weddings",
-      "anchor": "weddings",
       "cardText": "Your day, from getting ready to the last dance.",
       "cardPhoto": {
-        "image": "/src/assets/images/services/weddings-card.jpg",
+        "image": "/src/assets/images/services/items/0/cardPhoto/image.jpg",
         "alt": "Bride in a lace-back gown beside a groom in a white dinner jacket on a porch",
         "focusVertical": "center",
         "focusHorizontal": "center"
@@ -21,18 +20,41 @@
       ],
       "buttonLabel": "Inquire about your wedding",
       "sectionPhoto": {
-        "image": "/src/assets/images/services/weddings-section.jpg",
+        "image": "/src/assets/images/services/items/0/sectionPhoto/image.jpg",
         "alt": "Bride in a lace-back gown beside a groom in a white dinner jacket on a porch",
         "focusVertical": "center",
         "focusHorizontal": "center"
-      }
+      },
+      "anchor": "weddings"
+    },
+    {
+      "name": "Bridal Events",
+      "cardText": "Showers, engagement parties, rehearsal dinners & more.",
+      "cardPhoto": {
+        "image": "/src/assets/images/services/items/1/cardPhoto/image.jpg",
+        "alt": "Round table set with green glassware, woven placemats, menus, and a white and green floral centerpiece",
+        "focusVertical": "center",
+        "focusHorizontal": "center"
+      },
+      "title": "Showers, engagement parties, rehearsal dinners & more.",
+      "description": "The celebrations before the wedding deserve their own spotlight. I capture the details you planned, the toasts, and the people who showed up for you, so these moments don't get lost in the lead-up to the big day. Planning a proposal or an engagement shoot? I capture those too.",
+      "receives": [
+        "A curated collection of photos and videos from your event, focused on the details, the toasts, and your people."
+      ],
+      "buttonLabel": "Inquire about your event",
+      "sectionPhoto": {
+        "image": "/src/assets/images/services/items/1/sectionPhoto/image.jpg",
+        "alt": "Round table set with green glassware, woven placemats, menus, and a white and green floral centerpiece",
+        "focusVertical": "center",
+        "focusHorizontal": "center"
+      },
+      "anchor": "bridal-events"
     },
     {
       "name": "Bachelorette Weekends",
-      "anchor": "bachelorette",
       "cardText": "The outfits, the chaos, the inside jokes and everything in between.",
       "cardPhoto": {
-        "image": "/src/assets/images/services/bachelorette-card.jpg",
+        "image": "/src/assets/images/services/items/2/cardPhoto/image.jpg",
         "alt": "Bride in a high-neck lace gown standing with her father by a tall window",
         "focusVertical": "center",
         "focusHorizontal": "center"
@@ -46,41 +68,18 @@
       ],
       "buttonLabel": "Plan your bachelorette content",
       "sectionPhoto": {
-        "image": "/src/assets/images/services/bachelorette-section.jpg",
+        "image": "/src/assets/images/services/items/2/sectionPhoto/image.jpg",
         "alt": "Floral heels and white wide-leg pants",
         "focusVertical": "lower",
         "focusHorizontal": "center"
-      }
-    },
-    {
-      "name": "Bridal Events",
-      "anchor": "bridal-events",
-      "cardText": "Showers, engagement parties, rehearsal dinners & more.",
-      "cardPhoto": {
-        "image": "/src/assets/images/services/bridal-events-card.jpg",
-        "alt": "Round table set with green glassware, woven placemats, menus, and a white and green floral centerpiece",
-        "focusVertical": "center",
-        "focusHorizontal": "center"
       },
-      "title": "Showers, engagement parties, rehearsal dinners & more.",
-      "description": "The celebrations before the wedding deserve their own spotlight. I capture the details you planned, the toasts, and the people who showed up for you, so these moments don't get lost in the lead-up to the big day. Planning a proposal or an engagement shoot? I capture those too.",
-      "receives": [
-        "A curated collection of photos and videos from your event, focused on the details, the toasts, and your people."
-      ],
-      "buttonLabel": "Inquire about your event",
-      "sectionPhoto": {
-        "image": "/src/assets/images/services/bridal-events-section.jpg",
-        "alt": "Round table set with green glassware, woven placemats, menus, and a white and green floral centerpiece",
-        "focusVertical": "center",
-        "focusHorizontal": "center"
-      }
+      "anchor": "bachelorette"
     },
     {
       "name": "Celebrations",
-      "anchor": "celebrations",
       "cardText": "Birthdays, trips, milestones and all the moments worth documenting.",
       "cardPhoto": {
-        "image": "/src/assets/images/services/celebrations-card.jpg",
+        "image": "/src/assets/images/services/items/3/cardPhoto/image.jpg",
         "alt": "Nat in a striped knit set filming on her phone with a handheld grip",
         "focusVertical": "upper",
         "focusHorizontal": "center"
@@ -92,11 +91,12 @@
       ],
       "buttonLabel": "Tell me what you're celebrating",
       "sectionPhoto": {
-        "image": "/src/assets/images/services/celebrations-section.jpg",
+        "image": "/src/assets/images/services/items/3/sectionPhoto/image.jpg",
         "alt": "Nat in a striped knit set filming on her phone with a handheld grip",
         "focusVertical": "upper",
         "focusHorizontal": "center"
-      }
+      },
+      "anchor": "celebrations"
     }
   ]
 }
